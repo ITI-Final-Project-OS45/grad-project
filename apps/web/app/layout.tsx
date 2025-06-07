@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { QueryProvider } from "@/providers/query-provider";
 import { ClickSpark } from "@/components/ui/click-spark";
 
 const geistSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${sourceSerif.variable} h-full font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ClickSpark>{children}</ClickSpark>
+          <QueryProvider>
+            <ClickSpark>{children}</ClickSpark>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

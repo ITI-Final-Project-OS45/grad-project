@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import RotatingText from "@/components/ui/rotating-text";
 import { ArrowRight, Play } from "lucide-react";
+import { HERO_ROTATING_TEXTS, HERO_TEXT_CONFIG } from "@/constants/hero";
+
 export const Hero = () => {
   return (
     <section className="bg-background py-16 px-4 sm:px-6 lg:px-8">
@@ -18,17 +20,17 @@ export const Hero = () => {
             <span className="text-foreground">Streamline Your </span>
             <div className="inline-block min-w-[200px] sm:min-w-[280px] lg:min-w-[320px]">
               <RotatingText
-                texts={["Projects", "Workflow", "Business", "Operations", "Success"]}
+                texts={HERO_ROTATING_TEXTS}
                 transition={{ type: "spring", damping: 30, stiffness: 400 }}
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "-120%" }}
-                rotationInterval={3000}
-                staggerDuration={0.025}
-                staggerFrom="last"
-                mainClassName="px-1 sm:px-2 bg-primary text-white overflow-hidden py-0.5 sm:py-1 justify-center rounded-lg font-bold"
-                splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-                elementLevelClassName="transform-gpu"
+                rotationInterval={HERO_TEXT_CONFIG.rotationInterval}
+                staggerDuration={HERO_TEXT_CONFIG.staggerDuration}
+                staggerFrom={HERO_TEXT_CONFIG.staggerFrom}
+                mainClassName={HERO_TEXT_CONFIG.mainClassName}
+                splitLevelClassName={HERO_TEXT_CONFIG.splitLevelClassName}
+                elementLevelClassName={HERO_TEXT_CONFIG.elementLevelClassName}
               />
             </div>
           </h1>

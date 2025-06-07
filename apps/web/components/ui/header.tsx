@@ -8,7 +8,8 @@ import { usePathname } from "next/navigation";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggleDropdown } from "./theme-toggle-dropdown";
-import { Menu, X, TrendingUp, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { NAV_ITEMS } from "@/constants/navigation";
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -25,7 +26,7 @@ interface NavItemsProps {
   items: {
     name: string;
     link: string;
-    icon?: React.ReactNode;
+    icon?: React.ComponentType<{ className?: string }>;
   }[];
   className?: string;
   onItemClick?: () => void;
@@ -46,7 +47,6 @@ interface MobileNavMenuProps {
   children: React.ReactNode;
   className?: string;
   isOpen: boolean;
-  onClose: () => void;
 }
 
 const AnimatedHamburger = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
@@ -171,7 +171,7 @@ const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
         const isActive = pathname === item.link;
         return (
           <motion.div
-            key={`link-${idx}`}
+            key={item.link}
             className="relative"
             onMouseEnter={() => setHovered(idx)}
             variants={{
@@ -197,14 +197,14 @@ const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
               className={cn(
                 "relative px-6 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium no-underline flex items-center gap-2",
                 "text-foreground/70 hover:text-foreground",
-                isActive && "text-foreground font-semibold bg-accent"
+                isActive && "text-foreground font-semibold bg-secondary"
               )}
             >
               <AnimatePresence>
                 {hovered === idx && !isActive && (
                   <motion.div
                     layoutId="navbar-hover"
-                    className="absolute inset-0 rounded-lg bg-accent/60"
+                    className="absolute inset-0 rounded-lg bg-secondary"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -225,7 +225,7 @@ const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
                   >
-                    {item.icon}
+                    <item.icon className="h-4 w-4" />
                   </motion.span>
                 )}
                 <span>{item.name}</span>
@@ -256,7 +256,7 @@ const MobileNavHeader = ({ children, className }: MobileNavHeaderProps) => {
   return <div className={cn("flex w-full flex-row items-center justify-between px-4", className)}>{children}</div>;
 };
 
-export const MobileNavMenu = ({ children, className, isOpen, onClose }: MobileNavMenuProps) => {
+export const MobileNavMenu = ({ children, className, isOpen }: MobileNavMenuProps) => {
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -305,27 +305,6 @@ export const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const navItems = [
-    {
-      name: "Home",
-      link: "/",
-      icon: <TrendingUp className="h-4 w-4" />,
-    },
-    {
-      name: "Features",
-      link: "/features",
-      icon: <Zap className="h-4 w-4" />,
-    },
-    {
-      name: "About",
-      link: "/about",
-    },
-    {
-      name: "Contact",
-      link: "/contact",
-    },
-  ];
-
   return (
     <>
       <Navbar>
@@ -334,7 +313,7 @@ export const Header = () => {
             <NavbarLogo />
 
             <div className="flex-1 flex justify-center">
-              <NavItems items={navItems} />
+              <NavItems items={NAV_ITEMS} />
             </div>
 
             <motion.div
@@ -366,7 +345,7 @@ export const Header = () => {
             </div>
           </MobileNavHeader>
 
-          <MobileNavMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+          <MobileNavMenu isOpen={isMobileMenuOpen}>
             <nav className="w-full">
               <motion.ul
                 className="space-y-2"
@@ -381,7 +360,7 @@ export const Header = () => {
                   },
                 }}
               >
-                {navItems.map((item, index) => {
+                {NAV_ITEMS.map(({ icon: Icon, ...item }) => {
                   const isActive = pathname === item.link;
                   return (
                     <motion.li
@@ -410,11 +389,11 @@ export const Header = () => {
                         className={cn(
                           "flex items-center space-x-3 px-4 py-3 text-base font-medium transition-all duration-200 rounded-xl",
                           "hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-primary/20",
-                          isActive ? "text-foreground bg-accent" : "text-foreground/70 hover:text-foreground"
+                          isActive ? "text-foreground bg-secondary" : "text-foreground/70 hover:text-foreground"
                         )}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        {item.icon}
+                        {Icon && <Icon className="h-4 w-4" />}
                         <span>{item.name}</span>
                       </Link>
                     </motion.li>
