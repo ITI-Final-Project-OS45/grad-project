@@ -11,7 +11,6 @@ import { UserService } from './user.service';
 import { AuthGuard } from '../guards/auth.guards';
 import { UserDto } from './dto/user.dto';
 
-// Ensure UserService is correctly imported and exported in user.service.ts
 @UseGuards(AuthGuard)
 @Controller('users')
 export class UserController {

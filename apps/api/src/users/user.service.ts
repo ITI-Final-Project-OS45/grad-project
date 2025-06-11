@@ -43,6 +43,9 @@ export class UserService {
   }
 
   async deleteUser(userId: string): Promise<string> {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
     const deletedUser = await this.userModel.findByIdAndDelete(userId).exec();
     if (!deletedUser) {
       throw new NotFoundException('User not found');

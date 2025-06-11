@@ -1,7 +1,7 @@
 export type UserRole = 'manager' | 'developer' | 'qc';
 
 export class UserDto {
-  id!: string;
+  _id!: string;
   username!: string;
   displayName!: string;
   email!: string;

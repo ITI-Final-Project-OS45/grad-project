@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuthGuard } from './guards/auth.guards';
 
 import config from './config/config';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import config from './config/config';
     }),
     AuthModule, // This needs to come before providers that use its exports
     UsersModule,
+    WorkspacesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
