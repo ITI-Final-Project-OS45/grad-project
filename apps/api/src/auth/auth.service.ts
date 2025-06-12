@@ -1,0 +1,138 @@
+import { InjectModel } from '@nestjs/mongoose';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Model } from 'mongoose';
+import { User } from '../schemas/user.schema';
+import { SignupDto } from './dto/signup.dto';
+import * as bcrypt from 'bcrypt';
+import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { RefreshToken } from '../schemas/refresh-token.schema';
+import { v4 as uuidv4 } from 'uuid';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectModel(User.name) private readonly UserModel: Model<User>,
+    @InjectModel(RefreshToken.name)
+    private readonly RefreshTokenModel: Model<RefreshToken>,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async signup(signupData: SignupDto) {
+    // check if the email or user name exists
+
+    const { email, username, password, displayName } = signupData;
+
+    const isEmailExist = await this.UserModel.findOne({
+      email: email,
+    }).exec();
+
+    if (isEmailExist) {
+      throw new BadRequestException('Email or Username already exists');
+    }
+
+    const isUsernameExist = await this.UserModel.findOne({
+      username: username,
+    }).exec();
+
+    if (isUsernameExist) {
+      throw new BadRequestException('Email or Username already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10); //
+
+    // create new user
+    await this.UserModel.create({
+      username,
+      email,
+      password: hashedPassword,
+      displayName,
+    });
+  }
+
+  async login(loginData: LoginDto) {
+    const { usernameOrEmail, password } = loginData;
+
+    // Find user by email or username
+    const user = (await this.UserModel.findOne({
+      $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
+    })) as User;
+
+    if (!user) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Invalid credentials');
+    }
+    // generate JWT
+
+    const tokens = await this.generateUserToken(user.id, user.role);
+    return {
+      ...tokens,
+      userId: user.id.toString(),
+    };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    const token = await this.RefreshTokenModel.findOne({
+      token: refreshToken,
+      expiryDate: { $gte: new Date() },
+    });
+
+    if (!token) {
+      throw new UnauthorizedException('Refresh Token is invalid or expired');
+    }
+
+    // Get user to include role in new access token
+    const user = await this.UserModel.findById(token.userId);
+    if (!user) {
+      await this.RefreshTokenModel.deleteMany({ userId: token.userId });
+      throw new UnauthorizedException('User no longer exists');
+    }
+
+    // Generate only a new access token, keep the same refresh token
+    const accessToken = this.jwtService.sign(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      { userId: user.id, userRole: user.role },
+      { expiresIn: '15m' },
+    );
+
+    return {
+      accessToken,
+      refreshToken, // Return the same refresh token
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      userId: user.id,
+    };
+  }
+
+  async generateUserToken(userId: string, userRole: string = 'NA') {
+    const accessToken = this.jwtService.sign(
+      { userId, userRole },
+      { expiresIn: '15m' },
+    );
+    const refreshToken = uuidv4();
+
+    await this.storeRefreshToken(refreshToken, userId);
+
+    return { accessToken, refreshToken };
+  }
+
+  async storeRefreshToken(token: string, userId: string) {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+
+    await this.RefreshTokenModel.updateOne(
+      { userId },
+      { $set: { expiryDate, token } },
+      { upsert: true },
+    );
+  }
+}
