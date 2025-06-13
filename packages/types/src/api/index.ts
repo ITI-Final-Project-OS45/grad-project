@@ -56,7 +56,10 @@ export type ConflictResponse = {
   success: false;
   status: 409;
   message: "Conflict";
-  error: ApiError & { code: "CONFLICT"; details: { resource: string; reason: string } };
+  error: ApiError & {
+    code: "CONFLICT";
+    details: { resource: string; reason: string };
+  };
 };
 
 export type InternalServerErrorResponse = {
