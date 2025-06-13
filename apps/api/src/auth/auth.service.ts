@@ -100,7 +100,9 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(
+    refreshToken: string,
+  ): Promise<ApiResponse<LoginResponse, ApiError>> {
     const token = await this.RefreshTokenModel.findOne({
       token: refreshToken,
       expiryDate: { $gte: new Date() },
@@ -124,9 +126,14 @@ export class AuthService {
     );
 
     return {
-      accessToken,
-      refreshToken, // Return the same refresh token
-      userId: user._id,
+      success: true,
+      status: HttpStatus.OK,
+      data: {
+        accessToken,
+        refreshToken, // Return the same refresh token
+        userId: String(user._id),
+      },
+      message: 'Token refreshed successfully',
     };
   }
 

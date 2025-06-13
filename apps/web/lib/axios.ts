@@ -1,423 +1,599 @@
 /**
- * API Client Configuration and Utilities
- * ====================================
+ * Enhanced API Client for Next.js Applications
+ * ===========================================
  *
- * This module provides a comprehensive API client setup with authentication,
- * error handling, and utilities for both client-side and server-side requests.
- *
- * ## Key Features:
- * - Automatic token management with cookies
- * - Request/response logging in development
- * - Automatic retry on auth failures
- * - File upload/download support
- * - Server-side API support for Next.js actions
- * - TanStack Query keys factory
- *
- * ## Configuration:
- * - Base URL: NEXT_PUBLIC_API_URL (defaults to http://localhost:8080)
- * - Timeout: 30 seconds
- * - Cookies: 7-day expiry, secure in production
- * - CORS: Credentials included
- *
- * ## Main Exports:
- *
- * ### 1. tokenManager
- * Handles authentication token storage in cookies:
- * ```typescript
- * tokenManager.setToken("your-jwt-token");
- * const token = tokenManager.getToken();
- * tokenManager.clearToken();
- * const isLoggedIn = tokenManager.isAuthenticated();
- * ```
- *
- * ### 2. apiClient (Client-side API calls)
- * Main API client for browser-based requests:
- * ```typescript
- *  GET request
- * const users = await apiClient.get<User[]>("/api/users");
- *
- * POST request
- * const newUser = await apiClient.post<User>("/api/users", {
- *   name: "John Doe",
- *   email: "john@example.com"
- * });
- *
- * File upload with progress
- * const formData = new FormData();
- * formData.append("file", file);
- * await apiClient.upload("/api/upload", formData, (progress) => {
- *   console.log(`Upload: ${Math.round(progress.loaded / progress.total * 100)}%`);
- * });
- *
- *  File download
- * await apiClient.download("/api/files/report.pdf", "my-report.pdf");
- * ```
- *
- * ### 3. serverApi (Server-side API calls)
- * For Next.js server actions and API routes:
- * ```typescript
- *  In a server action
- * "use server";
- *
- * const data = await serverApi.get("/api/protected-resource", {
- *   token: "optional-token-override"
- * });
- * ```
- *
- * ### 4. queryKeys
- * Structured keys for TanStack Query caching:
- * ```typescript
- * Use in React Query
- * const { data } = useQuery({
- *   queryKey: queryKeys.project("123"),
- *   queryFn: () => apiClient.get(`/api/projects/123`)
- * });
- * ```
- *
- * ## Error Handling:
- * - 401 errors automatically clear tokens and redirect to /signin
- * - Network errors are transformed to user-friendly messages
- * - All errors include status codes and structured error details
- *
- * ## Security Features:
- * - Automatic Bearer token injection
- * - Secure cookie settings in production
- * - Request/response logging only in development
- * - CSRF protection with SameSite cookies
- *
- * @author Mohamed Hesham
+ * A comprehensive API client with first-class support for:
+ * - React Server Components (RSC)
+ * - React Client Components (RCC)
+ * - Server Actions
+ * - Automatic token refresh
+ * - Type-safe responses
  */
 
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import Cookies from "js-cookie";
-import { ApiResponse, ApiError } from "@repo/types";
+import axios, {
+  type AxiosError,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
+import type { ApiResponse, ApiError } from "@repo/types";
+import { tokenManager } from "./token";
+import { getErrorCodeFromStatus } from "./utils";
 
-// Base URL configuration
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Environment detection
+const isServer = typeof window === "undefined";
+const isDev = process.env.NODE_ENV === "development";
 
-// Cookie configuration
-const TOKEN_COOKIE_NAME = "auth_token";
-const COOKIE_OPTIONS = {
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  expires: 7, // 7 days
-};
+// Base URL configuration with API prefix
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080") + "/api/v1";
 
-// Create axios instance
-export const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 30000, // 30 seconds
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  withCredentials: true,
-});
+// Type definitions for enhanced functionality
+interface EnhancedAxiosRequestConfig extends InternalAxiosRequestConfig {
+  metadata?: {
+    startTime: number;
+    retryCount?: number;
+  };
+  _retry?: boolean;
+  _isRefreshing?: boolean;
+}
 
-// Request interceptor for adding auth tokens and request logging
-api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // Add auth token from cookies
-    const token = Cookies.get(TOKEN_COOKIE_NAME);
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+// Token refresh state management
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
 
-    // Add request timestamp for debugging
-    config.metadata = { startTime: Date.now() };
+/**
+ * Subscribe to token refresh
+ * @param callback Function to call when token is refreshed
+ */
+function subscribeTokenRefresh(callback: (token: string) => void): void {
+  refreshSubscribers.push(callback);
+}
 
-    // Log request in development
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🚀 [${config.method?.toUpperCase()}] ${config.url}`, {
-        data: config.data,
-        params: config.params,
-      });
-    }
+/**
+ * Notify all subscribers that token has been refreshed
+ * @param token New access token
+ */
+function onTokenRefreshed(token: string): void {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+}
 
-    return config;
-  },
-  (error: AxiosError) => {
-    console.error("Request interceptor error:", error);
-    return Promise.reject(error);
-  }
-);
+/**
+ * Create and configure an axios instance
+ * @param options Configuration options
+ * @returns Configured axios instance
+ */
+function createAxiosInstance(
+  options: {
+    withCredentials?: boolean;
+    isServerSide?: boolean;
+  } = {}
+): AxiosInstance {
+  const instance = axios.create({
+    baseURL: BASE_URL,
+    timeout: 30000, // 30 seconds
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    withCredentials: options.withCredentials ?? true,
+  });
 
-// Response interceptor for handling responses and errors
-api.interceptors.response.use(
-  (response: AxiosResponse) => {
-    // Log response in development
-    if (process.env.NODE_ENV === "development") {
-      const duration = Date.now() - (response.config.metadata?.startTime ?? Date.now());
-      console.log(`✅ [${response.config.method?.toUpperCase()}] ${response.config.url} - ${duration}ms`, {
-        status: response.status,
-        data: response.data,
-      });
-    }
+  // Request interceptor
+  instance.interceptors.request.use(
+    async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+      const enhancedConfig = config as EnhancedAxiosRequestConfig;
 
-    return response;
-  },
-  async (error: AxiosError<ApiError>) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
-    // Log error in development
-    if (process.env.NODE_ENV === "development") {
-      console.error(`❌ [${originalRequest?.method?.toUpperCase()}] ${originalRequest?.url}`, {
-        status: error.response?.status,
-        message: error.message,
-        data: error.response?.data,
-      });
-    }
-
-    // Handle 401 Unauthorized - Clear token and redirect
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      // Clear invalid token
-      tokenManager.clearToken();
-
-      // Redirect to login on client-side
-      if (typeof window !== "undefined") {
-        window.location.href = "/signin";
+      // Don't add auth token for refresh token requests
+      if (enhancedConfig.url?.includes("/auth/refresh")) {
+        return enhancedConfig;
       }
+
+      // Proactively check and refresh token if expiring soon (client-side only)
+      if (!options.isServerSide && tokenManager.isAuthenticated()) {
+        if (tokenManager.isTokenExpiringSoon(1)) {
+          // 1 minute buffer
+          try {
+            const refreshTokenValue = tokenManager.getRefreshToken();
+            if (refreshTokenValue) {
+              console.log("🔄 Proactive token refresh before API call...");
+              const response = await axios.post(`${BASE_URL}/auth/refresh`, {
+                refreshToken: refreshTokenValue,
+              });
+
+              if (response.data?.success && response.data?.data) {
+                tokenManager.setTokens(response.data.data.accessToken, response.data.data.refreshToken);
+                console.log("✅ Proactive token refresh successful");
+              }
+            }
+          } catch (error) {
+            console.error("❌ Proactive token refresh failed:", error);
+            // Continue with the request anyway, let the response interceptor handle it
+          }
+        }
+      }
+
+      // Add auth token from cookies (client-side) or from config (server-side)
+      if (!options.isServerSide) {
+        const token = tokenManager.getAccessToken();
+        if (token && enhancedConfig.headers) {
+          enhancedConfig.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+
+      // Add request timestamp for debugging and metrics
+      enhancedConfig.metadata = {
+        startTime: Date.now(),
+        retryCount: enhancedConfig.metadata?.retryCount ?? 0,
+      };
+
+      // Log request in development
+      if (isDev) {
+        console.log(`🚀 [${enhancedConfig.method?.toUpperCase()}] ${enhancedConfig.url}`, {
+          data: enhancedConfig.data,
+          params: enhancedConfig.params,
+        });
+      }
+
+      return enhancedConfig;
+    },
+    (error: AxiosError): Promise<AxiosError> => {
+      console.error("Request interceptor error:", error);
+      return Promise.reject(error);
     }
+  );
 
-    // Handle network errors
-    if (!error.response) {
-      const networkError = new Error("Network error - please check your connection");
-      return Promise.reject(networkError);
+  // Response interceptor
+  instance.interceptors.response.use(
+    (response: AxiosResponse): AxiosResponse => {
+      // Log response in development
+      if (isDev) {
+        const enhancedConfig = response.config as EnhancedAxiosRequestConfig;
+        const duration = Date.now() - (enhancedConfig.metadata?.startTime ?? Date.now());
+        console.log(`✅ [${enhancedConfig.method?.toUpperCase()}] ${enhancedConfig.url} - ${duration}ms`, {
+          status: response.status,
+          data: response.data,
+        });
+      }
+
+      return response;
+    },
+    async (error: AxiosError): Promise<any> => {
+      const originalRequest = error.config as EnhancedAxiosRequestConfig;
+
+      // Log error in development
+      if (isDev) {
+        console.error(`❌ [${originalRequest?.method?.toUpperCase()}] ${originalRequest?.url}`, {
+          status: error.response?.status,
+          message: error.message,
+          data: error.response?.data,
+        });
+      }
+
+      // Skip token refresh on server-side or for refresh token requests
+      if (options.isServerSide || originalRequest?.url?.includes("/auth/refresh")) {
+        return Promise.reject(transformApiError(error));
+      }
+
+      // Handle 401 Unauthorized with token refresh
+      if (error.response?.status === 401 && !originalRequest?._retry) {
+        // If we're already refreshing, wait for the new token
+        if (isRefreshing) {
+          try {
+            // Wait for token refresh to complete
+            const newToken = await new Promise<string>((resolve, reject) => {
+              subscribeTokenRefresh((token) => {
+                resolve(token);
+              });
+
+              // Add a timeout to prevent hanging indefinitely
+              setTimeout(() => {
+                reject(new Error("Token refresh timeout"));
+              }, 10000); // 10 second timeout
+            });
+
+            // Update the request with new token and retry
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return instance(originalRequest);
+          } catch (error) {
+            // Log the error and continue with rejection
+            console.error("Error while waiting for token refresh:", error);
+            return Promise.reject(transformApiError(error));
+          }
+        }
+
+        // Start token refresh process
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          // Get refresh token
+          const refreshToken = tokenManager.getRefreshToken();
+          if (!refreshToken) {
+            throw new Error("No refresh token available");
+          }
+
+          // Attempt to refresh the token
+          const response = await instance.post("/auth/refresh", { refreshToken });
+
+          if (response.data?.success && response.data?.data) {
+            // Update tokens - use the correct response structure
+            const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+            tokenManager.setTokens(accessToken, newRefreshToken);
+
+            // Update Authorization header for the original request
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+            // Notify all pending requests
+            onTokenRefreshed(accessToken);
+
+            // Reset refreshing state
+            isRefreshing = false;
+
+            // Retry the original request
+            return instance(originalRequest);
+          } else {
+            throw new Error("Token refresh failed");
+          }
+        } catch (error) {
+          // Reset refreshing state
+          isRefreshing = false;
+
+          // Log the error
+          console.error("Token refresh failed:", error);
+
+          // Clear tokens and redirect on client-side
+          if (!isServer) {
+            tokenManager.clearTokens();
+            window.location.href = "/signin";
+          }
+
+          return Promise.reject(transformApiError(error));
+        }
+      }
+
+      // Handle network errors
+      if (!error.response) {
+        const networkError = new Error("Network error - please check your connection");
+        return Promise.reject(networkError);
+      }
+
+      // Transform error for consistent handling
+      return Promise.reject(transformApiError(error));
     }
+  );
 
-    // Transform error for consistent handling
-    const transformedError = new Error(error.response.data?.message ?? error.message ?? "An unexpected error occurred");
-    Object.assign(transformedError, {
-      status: error.response.status,
-      code: error.response.data?.code ?? "UNKNOWN_ERROR",
-      details: error.response.data?.details,
-    });
+  return instance;
+}
 
-    return Promise.reject(transformedError);
+// Create singleton instances
+// Client-side instance (with credentials)
+let clientInstance: AxiosInstance;
+// Server-side instance (without credentials by default)
+let serverInstance: AxiosInstance;
+
+/**
+ * Get the appropriate axios instance based on environment
+ * @param isServerSide Whether to use server-side instance
+ * @returns Axios instance
+ */
+function getInstance(isServerSide = isServer): AxiosInstance {
+  if (isServerSide) {
+    if (!serverInstance) {
+      serverInstance = createAxiosInstance({
+        withCredentials: false,
+        isServerSide: true,
+      });
+    }
+    return serverInstance;
   }
-);
 
-// API wrapper functions for different HTTP methods
+  if (!clientInstance) {
+    clientInstance = createAxiosInstance({
+      withCredentials: true,
+      isServerSide: false,
+    });
+  }
+  return clientInstance;
+}
+
+/**
+ * Transform API errors into a consistent format
+ * @param error Axios error or regular Error
+ * @returns Transformed error
+ */
+function transformApiError(error: unknown): Error {
+  // Create a base error object
+  let transformedError: Error & {
+    status?: number;
+    code?: string;
+    details?: unknown;
+    apiResponse?: Record<string, any>;
+  };
+
+  // Handle AxiosError
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError;
+    const errorData = axiosError.response?.data as unknown;
+
+    if (errorData && typeof errorData === "object") {
+      const errorObj = errorData as Record<string, any>;
+
+      // Check if it's already in ApiResponse error format
+      if ("success" in errorObj && errorObj.success === false) {
+        // Already in your ApiResponse error format
+        transformedError = new Error(errorObj.message ?? "An error occurred");
+        Object.assign(transformedError, {
+          status: axiosError.response?.status,
+          code: errorObj.error?.code ?? "UNKNOWN_ERROR",
+          details: errorObj.error?.details,
+          apiResponse: errorObj, // Preserve the full API response
+        });
+      } else {
+        // Standard NestJS exception format
+        const message = errorObj.message ?? axiosError.message ?? "An unexpected error occurred";
+        transformedError = new Error(Array.isArray(message) ? message[0] : message);
+        Object.assign(transformedError, {
+          status: axiosError.response?.status,
+          code: errorObj.error ?? getErrorCodeFromStatus(axiosError.response?.status ?? 500),
+          details: errorObj,
+        });
+      }
+    } else {
+      // Fallback for any other error format
+      transformedError = new Error(axiosError.message ?? "An unexpected error occurred");
+      Object.assign(transformedError, {
+        status: axiosError.response?.status,
+        code: getErrorCodeFromStatus(axiosError.response?.status ?? 500),
+        details: errorData,
+      });
+    }
+  } else if (error instanceof Error) {
+    // Handle regular Error objects
+    transformedError = error;
+    Object.assign(transformedError, {
+      status: 500,
+      code: "UNKNOWN_ERROR",
+    });
+  } else {
+    // Handle unknown error types
+    transformedError = new Error("An unknown error occurred");
+    Object.assign(transformedError, {
+      status: 500,
+      code: "UNKNOWN_ERROR",
+      details: error,
+    });
+  }
+
+  return transformedError;
+}
+
+// Type for API client methods
+type ApiClientMethod<T = unknown, D = unknown> = (
+  url: string,
+  data?: D,
+  config?: AxiosRequestConfig
+) => Promise<ApiResponse<T, ApiError>>;
+
+// Type for API client GET/DELETE methods
+type ApiClientGetMethod<T = unknown> = (url: string, config?: AxiosRequestConfig) => Promise<ApiResponse<T, ApiError>>;
+
+// Type for API client upload method
+type ApiClientUploadMethod<T = unknown> = (
+  url: string,
+  formData: FormData,
+  onUploadProgress?: (progressEvent: import("axios").AxiosProgressEvent) => void
+) => Promise<ApiResponse<T, ApiError>>;
+
+// Type for server API methods with token option
+type ServerApiMethod<T = unknown, D = unknown> = (
+  url: string,
+  data?: D,
+  config?: AxiosRequestConfig & { token?: string }
+) => Promise<ApiResponse<T, ApiError>>;
+
+// Type for server API GET/DELETE methods with token option
+type ServerApiGetMethod<T = unknown> = (
+  url: string,
+  config?: AxiosRequestConfig & { token?: string }
+) => Promise<ApiResponse<T, ApiError>>;
+
+// Client-side API client
 export const apiClient = {
   // GET request
-  get: async <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.get(url, config);
-    return response.data;
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T, ApiError>> => {
+    const instance = getInstance(false);
+    return instance.get(url, config).then((response) => response.data);
   },
 
   // POST request
-  post: async <T = unknown, D = unknown>(
+  post: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.post(url, data, config);
-    return response.data;
+    const instance = getInstance(false);
+    return instance.post(url, data, config).then((response) => response.data);
   },
 
   // PUT request
-  put: async <T = unknown, D = unknown>(
+  put: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.put(url, data, config);
-    return response.data;
+    const instance = getInstance(false);
+    return instance.put(url, data, config).then((response) => response.data);
   },
 
   // PATCH request
-  patch: async <T = unknown, D = unknown>(
+  patch: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.patch(url, data, config);
-    return response.data;
+    const instance = getInstance(false);
+    return instance.patch(url, data, config).then((response) => response.data);
   },
 
   // DELETE request
-  delete: async <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.delete(url, config);
-    return response.data;
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T, ApiError>> => {
+    const instance = getInstance(false);
+    return instance.delete(url, config).then((response) => response.data);
   },
 
   // File upload with progress
-  upload: async <T = unknown>(
+  upload: <T = unknown>(
     url: string,
     formData: FormData,
     onUploadProgress?: (progressEvent: import("axios").AxiosProgressEvent) => void
   ): Promise<ApiResponse<T, ApiError>> => {
-    const response = await api.post(url, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      onUploadProgress,
-    });
-    return response.data;
-  },
-
-  // Download file
-  download: async (url: string, filename?: string): Promise<void> => {
-    const response = await api.get(url, {
-      responseType: "blob",
-    });
-
-    const blob = new Blob([response.data]);
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = filename ?? "download";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
+    const instance = getInstance(false);
+    return instance
+      .post(url, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress,
+      })
+      .then((response) => response.data);
   },
 };
 
-// Server-side API functions for use with "use server"
+// Server-side API client for RSC and Server Actions
 export const serverApi = {
-  // GET request for server actions
-  get: async <T = unknown>(
+  // GET request for server
+  get: <T = unknown>(
     url: string,
     config?: AxiosRequestConfig & { token?: string }
   ): Promise<ApiResponse<T, ApiError>> => {
     const { token, ...axiosConfig } = config ?? {};
+    const instance = getInstance(true);
 
     const headers = {
-      ...axiosConfig.headers,
+      ...axiosConfig?.headers,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    const response = await api.get(url, { ...axiosConfig, headers });
-    return response.data;
+    return instance.get(url, { ...axiosConfig, headers }).then((response) => response.data);
   },
 
-  // POST request for server actions
-  post: async <T = unknown, D = unknown>(
+  // POST request for server
+  post: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig & { token?: string }
   ): Promise<ApiResponse<T, ApiError>> => {
     const { token, ...axiosConfig } = config ?? {};
+    const instance = getInstance(true);
 
     const headers = {
-      ...axiosConfig.headers,
+      ...axiosConfig?.headers,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    const response = await api.post(url, data, { ...axiosConfig, headers });
-    return response.data;
+    return instance.post(url, data, { ...axiosConfig, headers }).then((response) => response.data);
   },
 
-  // PUT request for server actions
-  put: async <T = unknown, D = unknown>(
+  // PUT request for server
+  put: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig & { token?: string }
   ): Promise<ApiResponse<T, ApiError>> => {
     const { token, ...axiosConfig } = config ?? {};
+    const instance = getInstance(true);
 
     const headers = {
-      ...axiosConfig.headers,
+      ...axiosConfig?.headers,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    const response = await api.put(url, data, { ...axiosConfig, headers });
-    return response.data;
+    return instance.put(url, data, { ...axiosConfig, headers }).then((response) => response.data);
   },
 
-  // PATCH request for server actions
-  patch: async <T = unknown, D = unknown>(
+  // PATCH request for server
+  patch: <T = unknown, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig & { token?: string }
   ): Promise<ApiResponse<T, ApiError>> => {
     const { token, ...axiosConfig } = config ?? {};
+    const instance = getInstance(true);
 
     const headers = {
-      ...axiosConfig.headers,
+      ...axiosConfig?.headers,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    const response = await api.patch(url, data, { ...axiosConfig, headers });
-    return response.data;
+    return instance.patch(url, data, { ...axiosConfig, headers }).then((response) => response.data);
   },
 
-  // DELETE request for server actions
-  delete: async <T = unknown>(
+  // DELETE request for server
+  delete: <T = unknown>(
     url: string,
     config?: AxiosRequestConfig & { token?: string }
   ): Promise<ApiResponse<T, ApiError>> => {
     const { token, ...axiosConfig } = config ?? {};
+    const instance = getInstance(true);
 
     const headers = {
-      ...axiosConfig.headers,
+      ...axiosConfig?.headers,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    const response = await api.delete(url, { ...axiosConfig, headers });
-    return response.data;
+    return instance.delete(url, { ...axiosConfig, headers }).then((response) => response.data);
   },
 };
 
-// Utility functions for token management with cookies
-export const tokenManager = {
-  setToken: (token: string) => {
-    Cookies.set(TOKEN_COOKIE_NAME, token, COOKIE_OPTIONS);
-  },
-
-  getToken: (): string | undefined => {
-    return Cookies.get(TOKEN_COOKIE_NAME);
-  },
-
-  clearToken: () => {
-    Cookies.remove(TOKEN_COOKIE_NAME);
-  },
-
-  isAuthenticated: (): boolean => {
-    return !!tokenManager.getToken();
-  },
-};
-
-// Query keys factory for TanStack React Query
+// Query keys factory for TanStack Query
+// More specific keys to prevent cascading invalidations
 export const queryKeys = {
-  all: ["api"] as const,
+  // Auth endpoints: /api/v1/auth/*
+  auth: ["auth"] as const,
 
-  // Auth
-  auth: () => [...queryKeys.all, "auth"] as const,
-  currentUser: () => [...queryKeys.auth(), "user"] as const,
-  profile: () => [...queryKeys.auth(), "profile"] as const,
+  // Users endpoints: /api/v1/users/*
+  users: {
+    all: () => ["users"] as const,
+    lists: () => ["users", "list"] as const,
+    list: (filters?: string) => ["users", "list", filters] as const,
+    details: () => ["users", "detail"] as const,
+    detail: (id: string) => ["users", "detail", id] as const,
+    current: () => ["users", "current"] as const,
+  },
 
-  // Projects
-  projects: () => [...queryKeys.all, "projects"] as const,
-  project: (id: string) => [...queryKeys.projects(), id] as const,
-  projectMembers: (id: string) => [...queryKeys.project(id), "members"] as const,
-  projectTasks: (id: string) => [...queryKeys.project(id), "tasks"] as const,
+  // Workspaces endpoints: /api/v1/workspaces/*
+  workspaces: {
+    all: () => ["workspaces"] as const,
+    lists: () => ["workspaces", "list"] as const,
+    list: (userId?: string) => (userId ? (["workspaces", "list", userId] as const) : (["workspaces", "list"] as const)),
+    details: () => ["workspaces", "detail"] as const,
+    detail: (id: string) => ["workspaces", "detail", id] as const,
+    byUser: (userId: string) => ["workspaces", "by-user", userId] as const,
+  },
 
-  // Tasks
-  tasks: () => [...queryKeys.all, "tasks"] as const,
-  task: (id: string) => [...queryKeys.tasks(), id] as const,
+  // Legacy keys for backward compatibility (will be removed)
+  usersList: () => ["users", "list"] as const,
+  user: (id: string) => ["users", "detail", id] as const,
+  currentUser: () => ["users", "current"] as const,
+  workspacesList: (userId?: string) =>
+    userId ? (["workspaces", "list", userId] as const) : (["workspaces", "list"] as const),
+  workspace: (id: string) => ["workspaces", "detail", id] as const,
+  userWorkspaces: (userId: string) => ["workspaces", "by-user", userId] as const,
+} as const;
 
-  // Users
-  users: () => [...queryKeys.all, "users"] as const,
-  user: (id: string) => [...queryKeys.users(), id] as const,
-
-  // Organizations
-  organizations: () => [...queryKeys.all, "organizations"] as const,
-  organization: (id: string) => [...queryKeys.organizations(), id] as const,
-};
-
-// Type declarations for axios extensions
+// Extend axios types
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
       startTime: number;
+      retryCount?: number;
     };
     _retry?: boolean;
+    _isRefreshing?: boolean;
   }
 }
 
 // Default export
-export default api;
+export default getInstance();

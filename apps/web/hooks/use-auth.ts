@@ -5,14 +5,16 @@
  * Provides core authentication functionality: signIn, signOut, signUp
  * Uses TanStack Query for state management and caching.
  * Uses AuthService for all API operations.
+ * Integrates with enhanced tokenManager for access/refresh token handling.
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { tokenManager, queryKeys } from "@/lib/axios";
+import { queryKeys } from "@/lib/axios";
 import { SignInFormData, SignUpFormData } from "@/lib/schemas/auth-schemas";
-import { AuthService, SignInResponse, SignUpResponse } from "@/services/auth.service";
-import { ApiResponse, ApiError } from "@repo/types";
+import { AuthService, SignInResponse } from "@/services/auth.service";
+import { ApiResponse, ApiError, SignUpResponse } from "@repo/types";
+import { tokenManager } from "@/lib/token";
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
@@ -23,23 +25,20 @@ export const useAuth = () => {
     mutationFn: AuthService.signIn,
     onSuccess: (response) => {
       if (response.success && response.data) {
-        // Store token in cookies
-        tokenManager.setToken(response.data.token);
-
-        // Cache user data
-        queryClient.setQueryData(queryKeys.currentUser(), response.data.user);
+        // Store both access and refresh tokens in cookies
+        tokenManager.setTokens(response.data.accessToken, response.data.refreshToken);
 
         // Invalidate auth queries to refetch fresh data
-        queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth });
 
-        // Redirect to dashboard
+        // Redirect to workspaces
         router.push("/workspaces");
       }
     },
     onError: (error) => {
       console.error("Sign in error:", error);
       // Clear any existing invalid tokens
-      tokenManager.clearToken();
+      tokenManager.clearTokens();
     },
   });
 
@@ -48,17 +47,8 @@ export const useAuth = () => {
     mutationFn: AuthService.signUp,
     onSuccess: (response) => {
       if (response.success && response.data) {
-        // Store token in cookies
-        tokenManager.setToken(response.data.token);
-
-        // Cache user data
-        queryClient.setQueryData(queryKeys.currentUser(), response.data.user);
-
-        // Invalidate auth queries to refetch fresh data
-        queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
-
-        // Redirect to dashboard
-        router.push("/dashboard");
+        // After successful signup, redirect to sign in
+        router.push("/signin");
       }
     },
     onError: (error) => {
@@ -70,8 +60,8 @@ export const useAuth = () => {
   const signOut = useMutation<void, Error, void>({
     mutationFn: AuthService.signOut,
     onSettled: () => {
-      // Clear token and cached data regardless of server response
-      tokenManager.clearToken();
+      // Clear tokens and cached data regardless of server response
+      tokenManager.clearTokens();
 
       // Clear all cached data
       queryClient.clear();
