@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggleDropdown } from "./theme-toggle-dropdown";
-import { Menu, X } from "lucide-react";
+import { Briefcase, LogOut, Menu, X } from "lucide-react";
 import { NAV_ITEMS } from "@/constants/navigation";
+import { tokenManager } from "@/lib/token";
+import { UserButton } from "../user/user-button";
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -299,11 +301,59 @@ const NavbarLogo = () => {
 
 export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
-
+  const router = useRouter();
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setIsAuthenticated(tokenManager.isAuthenticated());
+    setIsLoaded(true);
+  }, []);
+  const handleSignOut = () => {
+    tokenManager.clearTokens();
+    setIsAuthenticated(false);
+    router.push("/signin");
+  };
+  if (!isLoaded) {
+    return (
+      <>
+        <Navbar>
+          <NavBody>
+            <div className="flex items-center justify-between w-full">
+              <NavbarLogo />
+              <div className="flex-1 flex justify-center">
+                <NavItems items={NAV_ITEMS} />
+              </div>
+              {/* Loading placeholder to prevent layout shift */}
+              <motion.div className="flex items-center space-x-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <ThemeToggleDropdown />
+                <div className="hidden lg:flex items-center space-x-3">
+                  <div className="w-16 h-9 bg-muted animate-pulse rounded-md" />
+                  <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
+                </div>
+              </motion.div>
+            </div>
+          </NavBody>
+
+          {/* Mobile Navigation Loading */}
+          <MobileNav>
+            <MobileNavHeader>
+              <NavbarLogo />
+              <div className="flex items-center space-x-2">
+                <ThemeToggleDropdown />
+                <div className="w-10 h-10 bg-muted animate-pulse rounded-lg" />
+              </div>
+            </MobileNavHeader>
+          </MobileNav>
+        </Navbar>
+        <div className="h-20 lg:h-24" />
+      </>
+    );
+  }
 
   return (
     <>
@@ -320,16 +370,27 @@ export const Header = () => {
               className="flex items-center space-x-4"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 400, damping: 25 }}
+              transition={{
+                delay: 0.2,
+                type: "spring",
+                stiffness: 400,
+                damping: 25,
+              }}
             >
               <ThemeToggleDropdown />
               <div className="hidden lg:flex items-center space-x-3">
-                <Button asChild variant="secondary">
-                  <Link href="/signin">Login</Link>
-                </Button>
-                <Button asChild className="bg-primary hover:bg-primary/90">
-                  <Link href="/signup">Sign up for free</Link>
-                </Button>
+                {isAuthenticated ? (
+                  <UserButton />
+                ) : (
+                  <>
+                    <Button asChild variant="secondary">
+                      <Link href="/signin">Login</Link>
+                    </Button>
+                    <Button asChild className="bg-primary hover:bg-primary/90">
+                      <Link href="/signup">Sign up for free</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>
@@ -406,14 +467,36 @@ export const Header = () => {
               className="flex flex-col space-y-3 pt-6 border-t border-border/50 w-full"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 400, damping: 25 }}
+              transition={{
+                delay: 0.3,
+                type: "spring",
+                stiffness: 400,
+                damping: 25,
+              }}
             >
-              <Button variant="secondary" asChild className="w-full">
-                <Link href="/signin">Login</Link>
-              </Button>
-              <Button asChild className="w-full bg-primary">
-                <Link href="/signup">Sign up for free</Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button variant="secondary" asChild className="w-full rounded-md">
+                    <Link href="/workspaces" className="text-foreground">
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Workspaces
+                    </Link>
+                  </Button>
+                  <Button onClick={handleSignOut} className="w-full bg-primary rounded-md">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" asChild className="w-full">
+                    <Link href="/signin">Login</Link>
+                  </Button>
+                  <Button asChild className="w-full bg-primary">
+                    <Link href="/signup">Sign up for free</Link>
+                  </Button>
+                </>
+              )}
             </motion.div>
           </MobileNavMenu>
         </MobileNav>

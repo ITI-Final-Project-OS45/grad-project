@@ -48,13 +48,18 @@ export const About = () => {
               <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-4 lg:mb-6 flex items-center gap-2">
                 <span>Why Choose</span>
                 <span className="bg-gradient-to-r from-rose-500 to-orange-500 bg-clip-text text-transparent">
-                  <Logo width={120} className="w-[120px] sm:w-[180px] lg:w-[220px] h-auto" />
+                  <Logo
+                    width={120}
+                    className="w-[120px] sm:w-[180px] lg:w-[220px] h-auto"
+                  />
                 </span>
                 <span>?</span>
               </h2>
               <p className="text-base lg:text-lg text-foreground leading-relaxed">
-                TeamFlow streamlines your entire project lifecycle from requirements gathering to deployment. Manage
-                PRDs, design collaboration, development tasks, and release workflows all in one platform.
+                TeamFlow streamlines your entire project lifecycle from
+                requirements gathering to deployment. Manage PRDs, design
+                collaboration, development tasks, and release workflows all in
+                one platform.
               </p>
             </div>
 
@@ -64,9 +69,12 @@ export const About = () => {
                   <FileText className="w-4 h-4 text-rose-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">PRD Documentation</h3>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    PRD Documentation
+                  </h3>
                   <p className="text-sm text-foreground">
-                    Markdown editor with versioning and PDF export for project requirements
+                    Markdown editor with versioning and PDF export for project
+                    requirements
                   </p>
                 </div>
               </div>
@@ -76,7 +84,9 @@ export const About = () => {
                   <Target className="w-4 h-4 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">Design Collaboration</h3>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Design Collaboration
+                  </h3>
                   <p className="text-sm text-foreground">
                     Figma embedding, mockup uploads, and design asset versioning
                   </p>
@@ -88,9 +98,12 @@ export const About = () => {
                   <Users className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">Development</h3>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Development
+                  </h3>
                   <p className="text-sm text-foreground">
-                    Task assignment, priority tracking, and due date alerts with dashboard widgets
+                    Task assignment, priority tracking, and due date alerts with
+                    dashboard widgets
                   </p>
                 </div>
               </div>
@@ -100,9 +113,12 @@ export const About = () => {
                   <GitBranch className="w-4 h-4 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">Release & QA</h3>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Release & QA
+                  </h3>
                   <p className="text-sm text-foreground">
-                    Semantic versioning, QA approval workflows, and hotfix management
+                    Semantic versioning, QA approval workflows, and hotfix
+                    management
                   </p>
                 </div>
               </div>
@@ -137,10 +153,15 @@ export const About = () => {
                       <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                         {card.title}
                       </h3>
-                      <p className="text-white/90 text-sm leading-relaxed flex-1">{card.description}</p>
+                      <p className="text-white/90 text-sm leading-relaxed flex-1">
+                        {card.description}
+                      </p>
                       <div className="mt-4 flex gap-2 flex-wrap">
                         {card.tags.map((tag, tagIndex) => (
-                          <span key={tagIndex} className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                          <span
+                            key={tagIndex}
+                            className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium"
+                          >
                             {tag}
                           </span>
                         ))}

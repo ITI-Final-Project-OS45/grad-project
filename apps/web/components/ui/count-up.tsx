@@ -64,7 +64,7 @@ export default function CountUp({
             onEnd();
           }
         },
-        delay * 1000 + duration * 1000
+        delay * 1000 + duration * 1000,
       );
 
       return () => {
@@ -72,7 +72,18 @@ export default function CountUp({
         clearTimeout(durationTimeoutId);
       };
     }
-  }, [isInView, startWhen, motionValue, direction, from, to, delay, onStart, onEnd, duration]);
+  }, [
+    isInView,
+    startWhen,
+    motionValue,
+    direction,
+    from,
+    to,
+    delay,
+    onStart,
+    onEnd,
+    duration,
+  ]);
 
   // Update text content with formatted number on spring value change
   useEffect(() => {
@@ -84,9 +95,13 @@ export default function CountUp({
           maximumFractionDigits: 0,
         };
 
-        const formattedNumber = Intl.NumberFormat("en-US", options).format(Number(latest.toFixed(0)));
+        const formattedNumber = Intl.NumberFormat("en-US", options).format(
+          Number(latest.toFixed(0)),
+        );
 
-        ref.current.textContent = separator ? formattedNumber.replace(/,/g, separator) : formattedNumber;
+        ref.current.textContent = separator
+          ? formattedNumber.replace(/,/g, separator)
+          : formattedNumber;
       }
     });
 

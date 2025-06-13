@@ -7,7 +7,11 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AnimationStart, AnimationVariant, createAnimation } from "@/lib/theme/animations";
+import {
+  AnimationStart,
+  AnimationVariant,
+  createAnimation,
+} from "@/lib/theme/animations";
 
 interface ThemeOption {
   value: string;
@@ -70,14 +74,20 @@ export const ThemeToggleDropdown = ({
 
   const getCurrentTheme = () => {
     if (!mounted) return themeOptions[0];
-    return themeOptions.find((option) => option.value === theme) || themeOptions[0];
+    return (
+      themeOptions.find((option) => option.value === theme) || themeOptions[0]
+    );
   };
 
   const getDisplayIcon = () => {
     if (!mounted) return <Sun className="h-4 w-4" />;
 
     if (theme === "system") {
-      return resolvedTheme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
+      return resolvedTheme === "dark" ? (
+        <Moon className="h-4 w-4" />
+      ) : (
+        <Sun className="h-4 w-4" />
+      );
     }
 
     return getCurrentTheme()!.icon;
@@ -125,7 +135,7 @@ export const ThemeToggleDropdown = ({
         className={cn(
           "w-auto  px-3 rounded-full hover:bg-accent/80 transition-all duration-200",
           "flex items-center gap-2 text-sm font-medium cursor-pointer",
-          isOpen && "bg-accent/50"
+          isOpen && "bg-accent/50",
         )}
       >
         <motion.div
@@ -160,7 +170,7 @@ export const ThemeToggleDropdown = ({
                 "absolute right-0 top-12 z-50 min-w-[160px] overflow-hidden rounded-xl  bg-white/95 backdrop-blur-xl shadow-lg",
                 "dark:bg-neutral-950/95",
                 "shadow-[0_0_32px_rgba(0,_0,_0,_0.08),_0_2px_16px_rgba(0,_0,_0,_0.04),_0_0_0_1px_rgba(0,_0,_0,_0.04)]",
-                "dark:shadow-[0_0_32px_rgba(0,_0,_0,_0.3),_0_2px_16px_rgba(0,_0,_0,_0.2),_0_0_0_1px_rgba(255,_255,_255,_0.1)]"
+                "dark:shadow-[0_0_32px_rgba(0,_0,_0,_0.3),_0_2px_16px_rgba(0,_0,_0,_0.2),_0_0_0_1px_rgba(255,_255,_255,_0.1)]",
               )}
             >
               <div className="p-1 space-y-1">
@@ -175,7 +185,7 @@ export const ThemeToggleDropdown = ({
                         "hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-primary/20",
                         isActive
                           ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
-                          : "text-foreground hover:text-foreground"
+                          : "text-foreground hover:text-foreground",
                       )}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -184,7 +194,11 @@ export const ThemeToggleDropdown = ({
                           scale: isActive ? 1.1 : 1,
                           color: isActive ? "var(--primary)" : "currentColor",
                         }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 25,
+                        }}
                       >
                         {option.icon}
                       </motion.div>

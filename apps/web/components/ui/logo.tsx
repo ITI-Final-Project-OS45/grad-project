@@ -11,7 +11,12 @@ interface LogoProps {
   alt?: string;
 }
 
-export const Logo = ({ width = 120, height = 40, className = "", alt = "Logo" }: LogoProps) => {
+export const Logo = ({
+  width = 120,
+  height = 40,
+  className = "",
+  alt = "Logo",
+}: LogoProps) => {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
@@ -20,11 +25,26 @@ export const Logo = ({ width = 120, height = 40, className = "", alt = "Logo" }:
   }, []);
 
   if (!mounted) {
-    return <div className={`${className}`} style={{ width, height }} aria-label={alt} />;
+    return (
+      <div
+        className={`${className}`}
+        style={{ width, height }}
+        aria-label={alt}
+      />
+    );
   }
 
   const isDark = resolvedTheme === "dark";
   const logoSrc = isDark ? "/assets/logo-dark.svg" : "/assets/logo-light.svg";
 
-  return <Image src={logoSrc} alt={alt} width={width} height={height} className={className} priority />;
+  return (
+    <Image
+      src={logoSrc}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      priority
+    />
+  );
 };

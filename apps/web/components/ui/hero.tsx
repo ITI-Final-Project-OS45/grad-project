@@ -20,17 +20,9 @@ export const Hero = () => {
             <span className="text-foreground">Streamline Your </span>
             <div className="inline-block min-w-[200px] sm:min-w-[280px] lg:min-w-[320px]">
               <RotatingText
-                texts={HERO_ROTATING_TEXTS}
-                transition={{ type: "spring", damping: 30, stiffness: 400 }}
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "-120%" }}
-                rotationInterval={HERO_TEXT_CONFIG.rotationInterval}
-                staggerDuration={HERO_TEXT_CONFIG.staggerDuration}
-                staggerFrom={HERO_TEXT_CONFIG.staggerFrom}
-                mainClassName={HERO_TEXT_CONFIG.mainClassName}
-                splitLevelClassName={HERO_TEXT_CONFIG.splitLevelClassName}
-                elementLevelClassName={HERO_TEXT_CONFIG.elementLevelClassName}
+                {...HERO_TEXT_CONFIG}
+                rotationInterval={4000}
+                mainClassName="px-2 sm:px-2 md:px-3 bg-primary text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
               />
             </div>
           </h1>
