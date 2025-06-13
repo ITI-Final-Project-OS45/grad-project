@@ -21,7 +21,11 @@ export function PRDPreview({ title, content }: PRDPreviewProps) {
   }, [content, title]);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Card>
         <CardHeader>
           <CardTitle>Preview</CardTitle>

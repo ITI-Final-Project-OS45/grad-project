@@ -19,11 +19,19 @@ interface PRDVersionHistoryProps {
   onRestoreVersion: (version: number) => void;
 }
 
-export function PRDVersionHistory({ versions, currentVersion, onRestoreVersion }: PRDVersionHistoryProps) {
+export function PRDVersionHistory({
+  versions,
+  currentVersion,
+  onRestoreVersion,
+}: PRDVersionHistoryProps) {
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Card>
         <CardHeader>
           <CardTitle>Version History</CardTitle>
@@ -41,13 +49,19 @@ export function PRDVersionHistory({ versions, currentVersion, onRestoreVersion }
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">Version {version.version}</h4>
-                    {version.version === currentVersion && <Badge variant="default">Current</Badge>}
+                    {version.version === currentVersion && (
+                      <Badge variant="default">Current</Badge>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{version.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {version.title}
+                  </p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      <span>{new Date(version.createdAt).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(version.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3" />
@@ -56,7 +70,11 @@ export function PRDVersionHistory({ versions, currentVersion, onRestoreVersion }
                   </div>
                 </div>
                 {version.version !== currentVersion && (
-                  <Button variant="outline" size="sm" onClick={() => onRestoreVersion(version.version)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRestoreVersion(version.version)}
+                  >
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Restore
                   </Button>

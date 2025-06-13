@@ -21,7 +21,14 @@ interface PRDEditorProps {
   isSaving: boolean;
 }
 
-export function PRDEditor({ title, content, onSave, onSaveAsNewVersion, onChange, isSaving }: PRDEditorProps) {
+export function PRDEditor({
+  title,
+  content,
+  onSave,
+  onSaveAsNewVersion,
+  onChange,
+  isSaving,
+}: PRDEditorProps) {
   const [editTitle, setEditTitle] = useState(title);
   const [editContent, setEditContent] = useState(content);
   const [hasChanges, setHasChanges] = useState(false);
@@ -71,18 +78,39 @@ export function PRDEditor({ title, content, onSave, onSaveAsNewVersion, onChange
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Edit PRD</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
-                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSave}
+                disabled={!hasChanges || isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
                 Save Changes
               </Button>
-              <Button size="sm" onClick={handleSaveAsNewVersion} disabled={!hasChanges || isSaving}>
-                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <GitBranch className="w-4 h-4 mr-2" />}
+              <Button
+                size="sm"
+                onClick={handleSaveAsNewVersion}
+                disabled={!hasChanges || isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <GitBranch className="w-4 h-4 mr-2" />
+                )}
                 Save as New Version
               </Button>
             </div>
