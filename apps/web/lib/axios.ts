@@ -111,7 +111,7 @@ export const api = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 // Request interceptor for adding auth tokens and request logging

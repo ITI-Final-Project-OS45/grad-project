@@ -33,7 +33,7 @@ export const useAuth = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
 
         // Redirect to dashboard
-        router.push("/dashboard");
+        router.push("/workspaces");
       }
     },
     onError: (error) => {

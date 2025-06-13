@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { ClickSpark } from "@/components/ui/click-spark";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeColorMode } from "@/components/ui/theme-color-mode";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -32,8 +34,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${sourceSerif.variable} h-full font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeColorMode />
           <QueryProvider>
             <ClickSpark>{children}</ClickSpark>
+            <Toaster />
           </QueryProvider>
         </ThemeProvider>
       </body>
