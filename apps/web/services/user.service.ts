@@ -2,49 +2,65 @@
  * User Management Service
  * ======================
  *
- * Handles RUD operations: Read, Update, Delete user data
+ * Handles all user-related API operations including:
+ * - Fetching current user profile
+ * - Fetching all users
+ * - Fetching user by ID
+ * - Updating user profile
+ * - Deleting user account
+ *
+ * API Endpoints:
+ * - GET /users           - Get all users
+ * - GET /users/:id       - Get user by ID
+ * - PATCH /users/:id     - Update user
+ * - DELETE /users/:id    - Delete user
+ *
+ * @author Mohamed Hesham
  */
 
 import { apiClient } from "@/lib/axios";
-import { ApiResponse, ApiError } from "@repo/types";
+import { ApiResponse, ApiError, UserResponse, UserDto } from "@repo/types";
 
-// TODO: Replace with actual types from packages/
-export interface User {
-  id: string;
-  email: string;
-  username: string;
-  name: string;
-  isEmailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+export interface UpdateProfileData extends Partial<UserDto> {}
 
-// TODO: Replace with actual types from packages/
-export interface UpdateProfileData {
-  name?: string;
-  email?: string;
-  username?: string;
-}
-// TODO: Replace with actual types from packages/
 export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
+  confirmNewPassword: string;
 }
+
+export type User = UserResponse;
 
 export class UserService {
   /**
-   * READ: Get current user profile
+   * Get current user profile
+   * Note: This gets the current user based on the auth token
+   * You might need to implement a /users/me endpoint on the backend
+   * For now, we'll need to get the userId from the token and call /users/:id
    */
-  static async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>("/users");
+  static async getCurrentUser(userId: string): Promise<User> {
+    const response = await apiClient.get<User>(`/users/${userId}`);
     if (response.success) {
       return response.data;
     }
-    throw new Error(response.message || "Failed to fetch user data");
+    throw new Error(response.message || "Failed to fetch user profile");
   }
 
   /**
-   * READ: Get user by ID
+   * Get all users
+   * Maps to GET /users
+   */
+  static async getAllUsers(): Promise<User[]> {
+    const response = await apiClient.get<User[]>("/users");
+    if (response.success) {
+      return response.data;
+    }
+    throw new Error(response.message || "Failed to fetch users");
+  }
+
+  /**
+   * Get user by ID
+   * Maps to GET /users/:id
    */
   static async getUserById(userId: string): Promise<User> {
     const response = await apiClient.get<User>(`/users/${userId}`);
@@ -55,25 +71,28 @@ export class UserService {
   }
 
   /**
-   * UPDATE: Update user profile
+   * Update user profile
+   * Maps to PATCH /users/:id
    */
-  static async updateProfile(updateData: UpdateProfileData): Promise<ApiResponse<User, ApiError>> {
-    return await apiClient.put<User>("/users", updateData);
+  static async updateProfile(userId: string, data: UpdateProfileData): Promise<ApiResponse<User, ApiError>> {
+    return await apiClient.patch<User>(`/users/${userId}`, data);
   }
 
   /**
-   * UPDATE: Change user password
+   * Delete user account
+   * Maps to DELETE /users/:id
    */
-  static async changePassword(passwordData: ChangePasswordData): Promise<ApiResponse<{ message: string }, ApiError>> {
-    return await apiClient.patch("/users/password", passwordData);
-  }
+  static async deleteAccount(userId: string): Promise<ApiResponse<{ message: string }, ApiError>> {
+    const response = await apiClient.delete<null>(`/users/${userId}`);
 
-  /**
-   * DELETE: Delete user account
-   */
-  static async deleteAccount(password: string): Promise<ApiResponse<{ message: string }, ApiError>> {
-    return await apiClient.delete("/users", {
-      data: { password },
-    });
+    // Transform the response to include a message
+    if (response.success) {
+      return {
+        ...response,
+        data: { message: "Account deleted successfully" },
+      };
+    }
+
+    return response as ApiResponse<{ message: string }, ApiError>;
   }
 }

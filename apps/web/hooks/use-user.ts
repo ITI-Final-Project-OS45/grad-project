@@ -1,148 +1,110 @@
 /**
  * User Management Hook using TanStack Query
- * ========================================
+ * =========================================
  *
- * Provides RUD operations: Read, Update, Delete user data
- * Uses TanStack Query for state management, caching, and optimistic updates.
+ * Provides user-related functionality: profile management, user fetching
+ * Uses TanStack Query for state management and caching.
  * Uses UserService for all API operations.
+ * Requires userId to be passed for most operations since backend expects it.
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { tokenManager, queryKeys } from "@/lib/axios";
-import { UserService, User, UpdateProfileData, ChangePasswordData } from "@/services/user.service";
+import { queryKeys } from "@/lib/axios";
+import { UserService, User, UpdateProfileData } from "@/services/user.service";
 import { ApiResponse, ApiError } from "@repo/types";
+import { tokenManager } from "@/lib/token";
+import { useTokenRefresh } from "./use-token-refresh";
 
-// Context types for mutations
-interface ProfileMutationContext {
-  previousUser?: User;
-}
-
-export const useUser = (userId?: string) => {
+export const useUser = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const userId = tokenManager.getUserId();
 
-  // READ: Get current user query
+  // Add automatic token refresh
+  const { refreshToken, isTokenExpiringSoon, getTokenTimeLeft, getTokenExpiryDate } = useTokenRefresh();
+
+  // Query: Get current user profile (primary query)
   const currentUser = useQuery<User, Error>({
-    queryKey: queryKeys.currentUser(),
-    queryFn: UserService.getCurrentUser,
-    enabled: tokenManager.isAuthenticated(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: queryKeys.users.current(),
+    queryFn: () => {
+      if (!userId) {
+        throw new Error("User ID is required to fetch current user");
+      }
+      return UserService.getCurrentUser(userId);
+    },
+    enabled: !!userId && tokenManager.isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
-      // Don't retry on auth errors
       if (error.message.includes("401") || error.message.includes("Unauthorized")) {
         return false;
       }
-      return failureCount < 3;
+      return failureCount < 2;
     },
   });
 
-  // READ: Get specific user query (for viewing other users)
-  const user = useQuery<User, Error>({
-    queryKey: queryKeys.user(userId!),
-    queryFn: () => UserService.getUserById(userId!),
-    enabled: !!userId && userId !== currentUser.data?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes for other users
+  // Query: Get all users (only fetched when explicitly needed)
+  const allUsers = useQuery<User[], Error>({
+    queryKey: queryKeys.users.lists(),
+    queryFn: UserService.getAllUsers,
+    enabled: false, // Disabled by default - only fetch when explicitly needed
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // UPDATE: Update profile mutation
-  const updateProfile = useMutation<ApiResponse<User, ApiError>, Error, UpdateProfileData, ProfileMutationContext>({
-    mutationFn: UserService.updateProfile,
-    onMutate: async (updateData): Promise<ProfileMutationContext> => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.currentUser() });
-
-      // Snapshot previous value
-      const previousUser = queryClient.getQueryData<User>(queryKeys.currentUser());
-
-      // Optimistically update
-      if (previousUser) {
-        const optimisticData: User = {
-          ...previousUser,
-          ...updateData,
-          updatedAt: new Date().toISOString(),
-        };
-        queryClient.setQueryData<User>(queryKeys.currentUser(), optimisticData);
-      }
-
-      return { previousUser };
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousUser) {
-        queryClient.setQueryData(queryKeys.currentUser(), context.previousUser);
-      }
-      console.error("Profile update error:", error);
-    },
-    onSuccess: (response) => {
-      if (response.success && response.data) {
-        // Update cached data with server response
-        queryClient.setQueryData(queryKeys.currentUser(), response.data);
-      }
-    },
-    onSettled: () => {
-      // Refetch to ensure data consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+  // Mutation: Update user profile
+  const updateProfile = useMutation<ApiResponse<User, ApiError>, Error, { userId: string; data: UpdateProfileData }>({
+    mutationFn: ({ userId: targetUserId, data }) => UserService.updateProfile(targetUserId, data),
+    onSuccess: (_, variables) => {
+      // Only invalidate specific user data to prevent cascading
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
+      // Only invalidate users list if it was actually fetched
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     },
   });
 
-  // UPDATE: Change password mutation
-  const changePassword = useMutation<ApiResponse<{ message: string }, ApiError>, Error, ChangePasswordData>({
-    mutationFn: UserService.changePassword,
-    onError: (error) => {
-      console.error("Password change error:", error);
-    },
-  });
-
-  // DELETE: Delete account mutation
-  const deleteAccount = useMutation<ApiResponse<{ message: string }, ApiError>, Error, { password: string }>({
-    mutationFn: async ({ password }) => UserService.deleteAccount(password),
+  // Mutation: Delete user account
+  const deleteAccount = useMutation<ApiResponse<{ message: string }, ApiError>, Error, string>({
+    mutationFn: (targetUserId) => UserService.deleteAccount(targetUserId),
     onSuccess: () => {
-      // Clear all data and redirect
-      tokenManager.clearToken();
+      // Clear all data and redirect to sign in
+      tokenManager.clearTokens();
       queryClient.clear();
-      router.push("/");
-    },
-    onError: (error) => {
-      console.error("Account deletion error:", error);
+      router.push("/signin");
     },
   });
 
   return {
-    // READ: Queries
+    // Queries
     currentUser,
-    user: userId ? user : undefined,
+    allUsers,
 
-    // UPDATE & DELETE: Mutations
+    // Mutations
     updateProfile,
-    changePassword,
     deleteAccount,
 
     // Loading states
-    isLoading: currentUser.isLoading || (userId ? user.isLoading : false),
+    isLoading: currentUser.isLoading,
+    isLoadingAllUsers: allUsers.isLoading,
     isUpdatingProfile: updateProfile.isPending,
-    isChangingPassword: changePassword.isPending,
     isDeletingAccount: deleteAccount.isPending,
 
     // Error states
-    error: currentUser.error || (userId ? user.error : null),
+    error: currentUser.error,
+    allUsersError: allUsers.error,
     updateProfileError: updateProfile.error,
-    changePasswordError: changePassword.error,
     deleteAccountError: deleteAccount.error,
 
     // Success states
     isUpdateProfileSuccess: updateProfile.isSuccess,
-    isChangePasswordSuccess: changePassword.isSuccess,
     isDeleteAccountSuccess: deleteAccount.isSuccess,
 
     // Utility functions
-    refetchUser: currentUser.refetch,
+    refetchCurrentUser: currentUser.refetch,
+    refetchAllUsers: allUsers.refetch,
 
     // Reset functions
     resetUpdateProfile: updateProfile.reset,
-    resetChangePassword: changePassword.reset,
     resetDeleteAccount: deleteAccount.reset,
   };
 };
-
-
