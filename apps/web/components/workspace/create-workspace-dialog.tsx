@@ -20,8 +20,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 const createWorkspaceSchema = z.object({
-  name: z.string().min(1, "Workspace name is required").max(100, "Name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  name: z
+    .string()
+    .min(1, "Workspace name is required")
+    .max(100, "Name must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 type CreateWorkspaceFormData = z.infer<typeof createWorkspaceSchema>;
@@ -31,7 +37,10 @@ interface CreateWorkspaceDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDialogProps) {
+export function CreateWorkspaceDialog({
+  open,
+  onOpenChange,
+}: CreateWorkspaceDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<CreateWorkspaceFormData>({
@@ -68,20 +77,28 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
           <DialogHeader>
             <DialogTitle>Create New Workspace</DialogTitle>
             <DialogDescription>
-              Create a new workspace to organize your projects and collaborate with your team.
+              Create a new workspace to organize your projects and collaborate
+              with your team.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4 py-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="name">Workspace Name *</Label>
               <Input
                 id="name"
                 placeholder="Enter workspace name"
                 {...form.register("name")}
-                className={form.formState.errors.name ? "border-destructive" : ""}
+                className={
+                  form.formState.errors.name ? "border-destructive" : ""
+                }
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.name.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
@@ -91,14 +108,23 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
                 placeholder="Describe your workspace (optional)"
                 rows={3}
                 {...form.register("description")}
-                className={form.formState.errors.description ? "border-destructive" : ""}
+                className={
+                  form.formState.errors.description ? "border-destructive" : ""
+                }
               />
               {form.formState.errors.description && (
-                <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.description.message}
+                </p>
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
