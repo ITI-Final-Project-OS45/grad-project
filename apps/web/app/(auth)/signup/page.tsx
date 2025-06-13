@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants, easeIn, easeOut } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthForm, Field } from "@/components/auth/auth-form";
 import { signUpSchema, type SignUpFormData } from "@/lib/schemas/auth-schemas";
+import { useAuth } from "@/hooks/use-auth";
 
-const pageVariants = {
+const pageVariants: Variants = {
   hidden: {
     opacity: 0,
     x: 50,
@@ -17,7 +17,7 @@ const pageVariants = {
     x: 0,
     transition: {
       duration: 0.7,
-      ease: "easeOut",
+      ease: easeOut,
     },
   },
   exit: {
@@ -25,14 +25,13 @@ const pageVariants = {
     x: -50,
     transition: {
       duration: 0.5,
-      ease: "easeIn",
+      ease: easeIn,
     },
   },
 };
 
 export default function SignUpPage() {
-  const [isLoading, setIsLoading] = useState(false);
-
+  const { signUp, isLoading } = useAuth();
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -43,14 +42,11 @@ export default function SignUpPage() {
       confirmPassword: "",
     },
   });
-
   const handleSignUp = async (data: SignUpFormData) => {
-    setIsLoading(true);
     try {
+      await signUp.mutateAsync(data);
     } catch (error) {
       console.error("Sign up error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -66,38 +62,10 @@ export default function SignUpPage() {
         alternativeLinkText="Sign in"
         isLoading={isLoading}
       >
-        <Field
-          form={form}
-          name="name"
-          label="Full Name"
-          placeholder="Enter your full name"
-          type="text"
-          index={0}
-        />
-        <Field
-          form={form}
-          name="email"
-          label="Email"
-          placeholder="Enter your email address"
-          type="email"
-          index={1}
-        />
-        <Field
-          form={form}
-          name="username"
-          label="Username"
-          placeholder="Choose a username"
-          type="text"
-          index={2}
-        />
-        <Field
-          form={form}
-          name="password"
-          label="Password"
-          placeholder="Create a password"
-          type="password"
-          index={3}
-        />
+        <Field form={form} name="name" label="Full Name" placeholder="Enter your full name" type="text" index={0} />
+        <Field form={form} name="email" label="Email" placeholder="Enter your email address" type="email" index={1} />
+        <Field form={form} name="username" label="Username" placeholder="Choose a username" type="text" index={2} />
+        <Field form={form} name="password" label="Password" placeholder="Create a password" type="password" index={3} />
         <Field
           form={form}
           name="confirmPassword"

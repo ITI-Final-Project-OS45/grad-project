@@ -1,3 +1,4 @@
+"use client";
 import { Header } from "@/components/ui/header";
 import { PropsWithChildren } from "react";
 

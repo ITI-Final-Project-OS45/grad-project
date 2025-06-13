@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthForm, Field } from "@/components/auth/auth-form";
 import { signInSchema, type SignInFormData } from "@/lib/schemas/auth-schemas";
+import { useAuth } from "@/hooks/use-auth";
 
-const pageVariants = {
+const pageVariants: Variants = {
   hidden: {
     opacity: 0,
     x: -50,
@@ -31,8 +32,7 @@ const pageVariants = {
 };
 
 export default function SignInPage() {
-  const [isLoading, setIsLoading] = useState(false);
-
+  const { signIn, isLoading } = useAuth();
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -42,12 +42,10 @@ export default function SignInPage() {
   });
 
   const handleSignIn = async (data: SignInFormData) => {
-    setIsLoading(true);
     try {
+      await signIn.mutateAsync(data);
     } catch (error) {
       console.error("Sign in error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -4,44 +4,18 @@ import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 import { ThemeToggleDropdown } from "@/components/ui/theme-toggle-dropdown";
 import Link from "next/link";
-
-const logoVariants = {
-  hidden: { opacity: 0, x: -100 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut",
-    },
-  },
-};
-
-const themeToggleVariants = {
-  hidden: { opacity: 0, x: 100 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut",
-    },
-  },
-};
-
-const mainVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 1,
-      ease: "easeOut",
-      delay: 0.3,
-    },
-  },
-};
+import { logoVariants, themeToggleVariants, mainVariants } from "@/constants/variants/auth.variants";
+import { tokenManager } from "@/lib/token";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (tokenManager.isAuthenticated()) {
+      router.push("/workspaces");
+    }
+  }, [router]);
   return (
     <motion.div
       variants={mainVariants}
