@@ -33,6 +33,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('database.connectionString'),
       }),
+
       inject: [ConfigService],
     }),
     AuthModule, // This needs to come before providers that use its exports

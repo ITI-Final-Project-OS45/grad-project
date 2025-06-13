@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Workspace, WorkspaceDocument } from './workspace.schema';
+import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
-import { WorkspaceDto } from './dto/workspace-dto';
+import { WorkspaceDto } from '@repo/types';
 
 @Injectable()
 export class WorkspaceService {
@@ -21,8 +21,8 @@ export class WorkspaceService {
       console.log('newwworkspace-->', newWorkspace);
       return newWorkspace;
     } catch (err) {
-      console.log(`There's error while creating new workspace: ${err}`);
-      throw new BadRequestException('faild to create this workspace');
+      console.log(`There's error while creating new workspace: ${String(err)}`);
+      throw new BadRequestException('failed to create this workspace');
     }
   }
   async getOneWorkspace(workspaceId: string): Promise<Workspace> {

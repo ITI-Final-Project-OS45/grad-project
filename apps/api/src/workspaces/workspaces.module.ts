@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Workspace, WorkspaceSchema } from './workspace.schema';
+import { Workspace, WorkspaceSchema } from '../schemas/workspace.schema';
 
 @Module({
   imports: [

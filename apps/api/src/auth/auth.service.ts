@@ -3,12 +3,19 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { User } from '../schemas/user.schema';
-import { SignupDto } from './dto/signup.dto';
+import { User, UserDocument } from '../schemas/user.schema';
+import type {
+  SignupDto,
+  LoginDto,
+  ApiResponse,
+  SignUpResponse,
+  ApiError,
+  LoginResponse,
+} from '@repo/types';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RefreshToken } from '../schemas/refresh-token.schema';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,13 +23,15 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private readonly UserModel: Model<User>,
+    @InjectModel(User.name) private readonly UserModel: Model<UserDocument>,
     @InjectModel(RefreshToken.name)
     private readonly RefreshTokenModel: Model<RefreshToken>,
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(signupData: SignupDto) {
+  async signup(
+    signupData: SignupDto,
+  ): Promise<ApiResponse<SignUpResponse, ApiError>> {
     // check if the email or user name exists
 
     const { email, username, password, displayName } = signupData;
@@ -47,21 +56,29 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10); //
 
     // create new user
-    await this.UserModel.create({
+    const newUser = await this.UserModel.create({
       username,
       email,
       password: hashedPassword,
       displayName,
     });
+    return {
+      success: true,
+      status: HttpStatus.CREATED,
+      data: { userId: String(newUser._id) },
+      message: 'User registered successfully',
+    };
   }
 
-  async login(loginData: LoginDto) {
+  async login(
+    loginData: LoginDto,
+  ): Promise<ApiResponse<LoginResponse, ApiError>> {
     const { usernameOrEmail, password } = loginData;
 
     // Find user by email or username
-    const user = (await this.UserModel.findOne({
+    const user = await this.UserModel.findOne({
       $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
-    })) as User;
+    }).exec();
 
     if (!user) {
       throw new BadRequestException('Invalid credentials');
@@ -74,10 +91,12 @@ export class AuthService {
     }
     // generate JWT
 
-    const tokens = await this.generateUserToken(user.id, user.role);
+    const tokens = await this.generateUserToken(String(user._id));
     return {
-      ...tokens,
-      userId: user.id.toString(),
+      success: true,
+      status: HttpStatus.OK,
+      data: { ...tokens, userId: String(user._id) },
+      message: 'Login successful',
     };
   }
 
@@ -100,24 +119,19 @@ export class AuthService {
 
     // Generate only a new access token, keep the same refresh token
     const accessToken = this.jwtService.sign(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      { userId: user.id, userRole: user.role },
+      { userId: user._id },
       { expiresIn: '15m' },
     );
 
     return {
       accessToken,
       refreshToken, // Return the same refresh token
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      userId: user.id,
+      userId: user._id,
     };
   }
 
-  async generateUserToken(userId: string, userRole: string = 'NA') {
-    const accessToken = this.jwtService.sign(
-      { userId, userRole },
-      { expiresIn: '15m' },
-    );
+  async generateUserToken(userId: string) {
+    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '15m' });
     const refreshToken = uuidv4();
 
     await this.storeRefreshToken(refreshToken, userId);

@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
-import { WorkspaceDto } from './dto/workspace-dto';
+import { WorkspaceDto } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
 
 @UseGuards(AuthGuard)

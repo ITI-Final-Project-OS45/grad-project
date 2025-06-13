@@ -16,7 +16,6 @@ export class AuthGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
@@ -26,7 +25,6 @@ export class AuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify<{ userId: string }>(token);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       request.userId = payload.userId;
     } catch (err) {
       Logger.error((err as Error).message);
