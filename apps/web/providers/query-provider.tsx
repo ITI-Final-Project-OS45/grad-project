@@ -22,7 +22,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
             retry: (failureCount, error: unknown) => {
               // 4xx errors should not be retried
               if (error && typeof error === "object" && "response" in error) {
-                const errorWithResponse = error as { response?: { status?: number } };
+                const errorWithResponse = error as {
+                  response?: { status?: number };
+                };
                 if (
                   errorWithResponse.response?.status &&
                   errorWithResponse.response.status >= 400 &&
@@ -35,14 +37,18 @@ export function QueryProvider({ children }: QueryProviderProps) {
               // 401 Unauthorized errors should not be retried
               if (error && typeof error === "object" && "message" in error) {
                 const errorWithMessage = error as { message: string };
-                if (errorWithMessage.message.includes("401") || errorWithMessage.message.includes("Unauthorized")) {
+                if (
+                  errorWithMessage.message.includes("401") ||
+                  errorWithMessage.message.includes("Unauthorized")
+                ) {
                   return false;
                 }
               }
 
               return failureCount < 3;
             },
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            retryDelay: (attemptIndex) =>
+              Math.min(1000 * 2 ** attemptIndex, 30000),
           },
           mutations: {
             retry: false,
@@ -52,7 +58,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
             },
           },
         },
-      })
+      }),
   );
 
   return (
