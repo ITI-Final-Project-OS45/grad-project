@@ -14,6 +14,7 @@ import {
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
+import type { RequestWithUser } from 'src/interfaces/request-user.interface';
 
 @UseGuards(AuthGuard)
 @Controller('workspaces')
@@ -22,7 +23,10 @@ export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Post('')
-  createWorkspace(@Body() workspaceData: WorkspaceDto, @Req() req) {
+  createWorkspace(
+    @Body() workspaceData: WorkspaceDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.workspaceService.createWorkspace(workspaceData, req.userId);
   }
   @Get(':id')
@@ -31,7 +35,7 @@ export class WorkspaceController {
   }
 
   @Get()
-  getAllWorkspacesForUser(@Req() req) {
+  getAllWorkspacesForUser(@Req() req: RequestWithUser) {
     const userId = req.userId;
     return this.workspaceService.getAllWorkspacesForUser(userId);
   }
@@ -40,7 +44,7 @@ export class WorkspaceController {
   updateWorkspace(
     @Param('id') workspaceId: string,
     @Body() data: Partial<WorkspaceDto>,
-    @Req() req,
+    @Req() req: RequestWithUser,
   ) {
     const userId = req.userId;
     data.createdBy = userId;
@@ -48,7 +52,10 @@ export class WorkspaceController {
   }
 
   @Delete(':id')
-  deleteWorkspace(@Param('id') workspaceId: string, @Req() req) {
+  deleteWorkspace(
+    @Param('id') workspaceId: string,
+    @Req() req: RequestWithUser,
+  ) {
     return this.workspaceService.deleteWorkspace(workspaceId, req.userId);
   }
 }
