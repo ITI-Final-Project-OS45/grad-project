@@ -9,6 +9,7 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from '@repo/types';
@@ -21,9 +22,8 @@ export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Post('')
-  createWorkspace(@Body() workspaceData: WorkspaceDto) {
-    console.log('newwworkspace-->', workspaceData);
-    return this.workspaceService.createWorkspace(workspaceData);
+  createWorkspace(@Body() workspaceData: WorkspaceDto, @Req() req) {
+    return this.workspaceService.createWorkspace(workspaceData, req.userId);
   }
   @Get(':id')
   getOneWorkspace(@Param('id') workspaceId: string) {
@@ -31,23 +31,24 @@ export class WorkspaceController {
   }
 
   @Get()
-  getAllWorkspacesForUser(@Body('userId') userId: string) {
+  getAllWorkspacesForUser(@Req() req) {
+    const userId = req.userId;
     return this.workspaceService.getAllWorkspacesForUser(userId);
   }
 
   @Patch(':id')
   updateWorkspace(
-    @Param('id') worksapceId: string,
+    @Param('id') workspaceId: string,
     @Body() data: Partial<WorkspaceDto>,
+    @Req() req,
   ) {
-    return this.workspaceService.updateWorkspace(worksapceId, data);
+    const userId = req.userId;
+    data.createdBy = userId;
+    return this.workspaceService.updateWorkspace(workspaceId, data);
   }
 
   @Delete(':id')
-  deleteWorkspace(
-    @Param('id') workspaceId: string,
-    @Body() data: Partial<WorkspaceDto>,
-  ) {
-    return this.workspaceService.deleteWorkspace(workspaceId, data);
+  deleteWorkspace(@Param('id') workspaceId: string, @Req() req) {
+    return this.workspaceService.deleteWorkspace(workspaceId, req.userId);
   }
 }

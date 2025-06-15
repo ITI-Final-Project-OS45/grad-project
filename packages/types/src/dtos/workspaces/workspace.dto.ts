@@ -1,21 +1,15 @@
-import { IsString, IsDate, IsMongoId } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class WorkspaceDto {
-  @IsMongoId()
-  _id!: string;
-
   @IsString()
+  @IsNotEmpty()
   name!: string;
 
   @IsString()
-  description!: string;
+  @IsOptional()
+  description?: string;
 
   @IsString()
-  createdBy!: string;
-
-  @IsDate()
-  createdAt!: Date;
-
-  @IsDate()
-  updatedAt!: Date;
+  @IsOptional()
+  createdBy?: string;
 }

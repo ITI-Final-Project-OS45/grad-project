@@ -16,5 +16,8 @@ export class Workspace {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy!: string; // user.username
+
+  @Prop({ type: Types.ObjectId, ref: 'Release', default: [] })
+  releases?: Types.ObjectId[];
 }
 export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);

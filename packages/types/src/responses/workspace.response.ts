@@ -5,4 +5,5 @@ export interface WorkspaceResponse {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  releases?: string[];
 }
