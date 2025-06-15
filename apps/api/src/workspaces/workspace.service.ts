@@ -24,26 +24,18 @@ export class WorkspaceService {
   async createWorkspace(
     workspaceData: WorkspaceDto,
     createdBy: string,
-  ): Promise<ApiResponse<WorkspaceResponse, ApiError>> {
+  ): Promise<ApiResponse<Workspace, ApiError>> {
     try {
       const newWorkspace = await this.workspaceModel.create({
         ...workspaceData,
         createdBy,
       });
-      const transformedWorkspace: WorkspaceResponse = {
-        id: String(newWorkspace._id),
-        name: newWorkspace.name,
-        description: newWorkspace.description,
-        createdBy: newWorkspace.createdBy.toString(),
-        releases: newWorkspace.releases?.map((release) => String(release)),
-        createdAt: newWorkspace.createdAt.toISOString(),
-        updatedAt: newWorkspace.updatedAt.toISOString(),
-      };
+
       return {
         success: true,
         status: HttpStatus.CREATED,
         message: 'Workspace created successfully',
-        data: transformedWorkspace,
+        data: newWorkspace,
       };
     } catch (err) {
       console.log(`There's error while creating new workspace: ${String(err)}`);
@@ -52,7 +44,7 @@ export class WorkspaceService {
   }
   async getOneWorkspace(
     workspaceId: string,
-  ): Promise<ApiResponse<WorkspaceResponse, ApiError>> {
+  ): Promise<ApiResponse<Workspace, ApiError>> {
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid user ID');
     }
@@ -62,26 +54,18 @@ export class WorkspaceService {
     if (!workspace) {
       throw new NotFoundException('workspace not found');
     }
-    const transformedWorkspace: WorkspaceResponse = {
-      id: String(workspace._id),
-      name: workspace.name,
-      description: workspace.description,
-      createdBy: workspace.createdBy.toString(),
-      releases: workspace.releases?.map((release) => String(release)),
-      createdAt: workspace.createdAt.toISOString(),
-      updatedAt: workspace.updatedAt.toISOString(),
-    };
+
     return {
       success: true,
       status: HttpStatus.OK,
       message: 'Workspace found successfully',
-      data: transformedWorkspace,
+      data: workspace,
     };
   }
 
   async getAllWorkspacesForUser(
     userId: string,
-  ): Promise<ApiResponse<WorkspaceResponse[], ApiError>> {
+  ): Promise<ApiResponse<Workspace[], ApiError>> {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
@@ -89,34 +73,24 @@ export class WorkspaceService {
     if (!allWorkspaces) {
       throw new NotFoundException("the user doesn't has workspaces");
     }
-    const transformedWorkspaces: WorkspaceResponse[] = allWorkspaces.map(
-      (workspace) => ({
-        id: String(workspace._id),
-        name: workspace.name,
-        description: workspace.description,
-        createdBy: workspace.createdBy.toString(),
-        releases: workspace.releases?.map((release) => String(release)),
-        createdAt: workspace.createdAt.toISOString(),
-        updatedAt: workspace.updatedAt.toISOString(),
-      }),
-    );
+
     return {
       success: true,
       status: HttpStatus.OK,
       message: 'Workspaces found successfully',
-      data: transformedWorkspaces,
+      data: allWorkspaces,
     };
   }
 
   async updateWorkspace(
-    worksapceId: string,
+    workspaceId: string,
     data: Partial<WorkspaceDto>,
-  ): Promise<ApiResponse<WorkspaceResponse, ApiError>> {
-    if (!isValidObjectId(worksapceId)) {
+  ): Promise<ApiResponse<Workspace, ApiError>> {
+    if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }
     const isWorkspaceExist = await this.workspaceModel
-      .findById(worksapceId)
+      .findById(workspaceId)
       .exec();
 
     if (!isWorkspaceExist) {
@@ -130,33 +104,25 @@ export class WorkspaceService {
     }
 
     const updatedWorkspace = await this.workspaceModel
-      .findByIdAndUpdate(worksapceId, { $set: data }, { new: true })
+      .findByIdAndUpdate(workspaceId, { $set: data }, { new: true })
       .exec();
 
     if (!updatedWorkspace) {
       throw new NotFoundException('User not found');
     }
-    const transformedWorkspace: WorkspaceResponse = {
-      id: String(updatedWorkspace._id),
-      name: updatedWorkspace.name,
-      description: updatedWorkspace.description,
-      createdBy: updatedWorkspace.createdBy.toString(),
-      releases: updatedWorkspace.releases?.map((release) => String(release)),
-      createdAt: updatedWorkspace.createdAt.toISOString(),
-      updatedAt: updatedWorkspace.updatedAt.toISOString(),
-    };
+
     return {
       success: true,
       status: HttpStatus.OK,
       message: 'Workspace updated successfully',
-      data: transformedWorkspace,
+      data: updatedWorkspace,
     };
   }
 
   async deleteWorkspace(
     workspaceId: string,
     userId: string,
-  ): Promise<ApiResponse<string, ApiError>> {
+  ): Promise<ApiResponse<null, ApiError>> {
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }
@@ -185,7 +151,7 @@ export class WorkspaceService {
       success: true,
       status: HttpStatus.OK,
       message: 'Workspace deleted successfully',
-      data: `Workspace with ID ${workspaceId} has been deleted`,
+      data: null,
     };
   }
 }
