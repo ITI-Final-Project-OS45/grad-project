@@ -44,8 +44,14 @@ export default function SignInPage() {
   const handleSignIn = async (data: SignInFormData) => {
     try {
       await signIn.mutateAsync(data);
-    } catch (error) {
-      console.error("Sign in error:", error);
+    } catch (error: unknown) {
+      const errorResponse = error as Error;
+      const errorMessage = errorResponse?.message ?? "Unable to sign in. Please try again.";
+
+      form.setError("root", {
+        type: "manual",
+        message: errorMessage,
+      });
     }
   };
 

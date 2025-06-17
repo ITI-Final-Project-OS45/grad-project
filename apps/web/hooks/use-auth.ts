@@ -12,8 +12,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { queryKeys } from "@/lib/axios";
 import { SignInFormData, SignUpFormData } from "@/lib/schemas/auth-schemas";
-import { AuthService, SignInResponse } from "@/services/auth.service";
-import { ApiResponse, ApiError, SignUpResponse } from "@repo/types";
+import { AuthService } from "@/services/auth.service";
+import { ApiResponse, ApiError, SignUpResponse, LoginResponse } from "@repo/types";
 import { tokenManager } from "@/lib/token";
 
 export const useAuth = () => {
@@ -21,7 +21,7 @@ export const useAuth = () => {
   const router = useRouter();
 
   // Sign In Mutation
-  const signIn = useMutation<ApiResponse<SignInResponse, ApiError>, Error, SignInFormData>({
+  const signIn = useMutation<ApiResponse<LoginResponse, ApiError>, Error, SignInFormData>({
     mutationFn: AuthService.signIn,
     onSuccess: (response) => {
       if (response.success && response.data) {

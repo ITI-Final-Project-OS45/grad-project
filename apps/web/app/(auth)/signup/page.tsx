@@ -42,11 +42,18 @@ export default function SignUpPage() {
       confirmPassword: "",
     },
   });
+
   const handleSignUp = async (data: SignUpFormData) => {
     try {
       await signUp.mutateAsync(data);
-    } catch (error) {
-      console.error("Sign up error:", error);
+    } catch (error: unknown) {
+      const errorResponse = error as Error;
+      const errorMessage = errorResponse?.message ?? "Unable to create account. Please try again.";
+
+      form.setError("root", {
+        type: "manual",
+        message: errorMessage,
+      });
     }
   };
 
