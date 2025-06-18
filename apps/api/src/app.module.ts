@@ -11,6 +11,7 @@ import { AuthGuard } from './guards/auth.guards';
 import config from './config/config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DesignAssetModule } from './design-asset/design-asset.module';
+import { ReleasesModule } from './releases/releases.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { DesignAssetModule } from './design-asset/design-asset.module';
     UsersModule,
     WorkspacesModule,
     DesignAssetModule,
+    ReleasesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],

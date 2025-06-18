@@ -14,14 +14,7 @@ export type ApiResponse<T, E> =
       error: E;
     };
 
-export type ErrorCode =
-  | "VALIDATION_ERROR"
-  | "NOT_FOUND"
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  | "CONFLICT"
-  | "INTERNAL_SERVER_ERROR"
-  | "BAD_REQUEST";
+export type ErrorCode = 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500;
 
 export interface PaginationInfo {
   page: number;
@@ -33,9 +26,9 @@ export interface PaginationInfo {
 }
 
 export interface ApiError {
-  code: ErrorCode;
-  message: string;
-  details?: Record<string, any>;
+  message: string | string[];
+  error: string;
+  statusCode: number;
 }
 
 export type CreatedResponse<T> = {

@@ -548,39 +548,19 @@ export const serverApi = {
 };
 
 // Query keys factory for TanStack Query
-// More specific keys to prevent cascading invalidations
 export const queryKeys = {
-  // Auth endpoints: /api/v1/auth/*
-  auth: ["auth"] as const,
-
   // Users endpoints: /api/v1/users/*
   users: {
-    all: () => ["users"] as const,
     lists: () => ["users", "list"] as const,
-    list: (filters?: string) => ["users", "list", filters] as const,
-    details: () => ["users", "detail"] as const,
     detail: (id: string) => ["users", "detail", id] as const,
     current: () => ["users", "current"] as const,
   },
 
   // Workspaces endpoints: /api/v1/workspaces/*
   workspaces: {
-    all: () => ["workspaces"] as const,
     lists: () => ["workspaces", "list"] as const,
-    list: (userId?: string) => (userId ? (["workspaces", "list", userId] as const) : (["workspaces", "list"] as const)),
-    details: () => ["workspaces", "detail"] as const,
     detail: (id: string) => ["workspaces", "detail", id] as const,
-    byUser: (userId: string) => ["workspaces", "by-user", userId] as const,
   },
-
-  // Legacy keys for backward compatibility (will be removed)
-  usersList: () => ["users", "list"] as const,
-  user: (id: string) => ["users", "detail", id] as const,
-  currentUser: () => ["users", "current"] as const,
-  workspacesList: (userId?: string) =>
-    userId ? (["workspaces", "list", userId] as const) : (["workspaces", "list"] as const),
-  workspace: (id: string) => ["workspaces", "detail", id] as const,
-  userWorkspaces: (userId: string) => ["workspaces", "by-user", userId] as const,
 } as const;
 
 // Extend axios types

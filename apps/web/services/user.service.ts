@@ -21,7 +21,7 @@
 import { apiClient } from "@/lib/axios";
 import { ApiResponse, ApiError, UserResponse, UserDto } from "@repo/types";
 
-export interface UpdateProfileData extends Partial<UserDto> {}
+export type UpdateProfileData = Partial<UserDto>
 
 export interface ChangePasswordData {
   currentPassword: string;
@@ -32,14 +32,16 @@ export interface ChangePasswordData {
 export type User = UserResponse;
 
 export class UserService {
+  private static readonly ENDPOINTS = {
+    USERS: "/users",
+    USER_BY_ID: (id: string) => `/users/${id}`,
+  } as const;
+
   /**
    * Get current user profile
-   * Note: This gets the current user based on the auth token
-   * You might need to implement a /users/me endpoint on the backend
-   * For now, we'll need to get the userId from the token and call /users/:id
    */
   static async getCurrentUser(userId: string): Promise<User> {
-    const response = await apiClient.get<User>(`/users/${userId}`);
+    const response = await apiClient.get<User>(UserService.ENDPOINTS.USER_BY_ID(userId));
     if (response.success) {
       return response.data;
     }
@@ -51,7 +53,7 @@ export class UserService {
    * Maps to GET /users
    */
   static async getAllUsers(): Promise<User[]> {
-    const response = await apiClient.get<User[]>("/users");
+    const response = await apiClient.get<User[]>(UserService.ENDPOINTS.USERS);
     if (response.success) {
       return response.data;
     }
@@ -63,7 +65,7 @@ export class UserService {
    * Maps to GET /users/:id
    */
   static async getUserById(userId: string): Promise<User> {
-    const response = await apiClient.get<User>(`/users/${userId}`);
+    const response = await apiClient.get<User>(UserService.ENDPOINTS.USER_BY_ID(userId));
     if (response.success) {
       return response.data;
     }
@@ -75,7 +77,7 @@ export class UserService {
    * Maps to PATCH /users/:id
    */
   static async updateProfile(userId: string, data: UpdateProfileData): Promise<ApiResponse<User, ApiError>> {
-    return await apiClient.patch<User>(`/users/${userId}`, data);
+    return await apiClient.patch<User>(UserService.ENDPOINTS.USER_BY_ID(userId), data);
   }
 
   /**
@@ -83,9 +85,8 @@ export class UserService {
    * Maps to DELETE /users/:id
    */
   static async deleteAccount(userId: string): Promise<ApiResponse<{ message: string }, ApiError>> {
-    const response = await apiClient.delete<null>(`/users/${userId}`);
+    const response = await apiClient.delete<null>(UserService.ENDPOINTS.USER_BY_ID(userId));
 
-    // Transform the response to include a message
     if (response.success) {
       return {
         ...response,

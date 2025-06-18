@@ -1,5 +1,5 @@
 export interface WorkspaceResponse {
-  id: string;
+  _id: string;
   name: string;
   description?: string;
   createdBy: string;
