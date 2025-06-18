@@ -1,7 +1,7 @@
 import { WorkspaceResponse } from "./workspace.response";
 
 export interface UserResponse {
-  id: string;
+  _id: string;
   username: string;
   displayName: string;
   email: string;

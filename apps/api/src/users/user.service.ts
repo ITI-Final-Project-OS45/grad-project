@@ -26,12 +26,12 @@ export class UserService {
 
     const data: UserResponse[] = users.map((u) => {
       return {
-        id: String(u._id),
+        _id: String(u._id),
         username: u.username,
         displayName: u.displayName,
         email: u.email,
         workspaces: u.workspaces.map((w) => ({
-          id: String(w._id),
+          _id: String(w._id),
           name: w.name,
           description: w.description,
           createdBy: w.createdBy.toString(),
@@ -63,19 +63,19 @@ export class UserService {
       .select('-password')
       .populate<{ workspaces: WorkspaceDocument[] }>('workspaces')
       .exec();
-    console.log(`User found: ${user ? user._id : 'not found'}`);
+    console.log(`User found: ${user ? String(user._id) : 'not found'}`);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     const data: UserResponse = {
-      id: String(user._id),
+      _id: String(user._id),
       username: user.username,
       displayName: user.displayName,
       email: user.email,
       workspaces: user.workspaces.map((w) => ({
-        id: String(w._id),
+        _id: String(w._id),
         name: w.name,
         description: w.description,
         createdBy: w.createdBy.toString(),
@@ -108,7 +108,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
     const updated: UserResponse = {
-      id: String(u._id),
+      _id: String(u._id),
       username: u.username,
       displayName: u.displayName,
       email: u.email,
