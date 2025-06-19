@@ -1,37 +1,58 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { DesignAssetService } from './design-asset.service';
-import type {
-  DessignAssetDto
+import {
+  DesignAssetDto,
+  UpdateDesignAssetDto
 } from '@repo/types'
+import { AuthGuard } from 'src/guards/auth.guards';
+import type { RequestWithUser } from 'src/interfaces/request-user.interface';
+import { FileInterceptor } from '@nestjs/platform-express';
 
+@UseGuards(AuthGuard)
 @Controller('design-assets')
 export class DesignAssetController {
   constructor(private readonly designAssetService: DesignAssetService) {}
 
   @Post()
-  create(@Body() designAsset: DessignAssetDto ) {
+  @UseInterceptors(FileInterceptor('file'))
+  create(
+    @Body() designAsset: DesignAssetDto,
+    @Req() req: RequestWithUser,
+    @UploadedFile() file: Express.Multer.File
+ ) {
     console.log(`🟢 create@DesignAssetController: <- `, designAsset);
-    
-    return this.designAssetService.create(designAsset);
+    return this.designAssetService.create(designAsset, req.userId, file);
   }
 
-  @Get()
-  findAll() {
-    return this.designAssetService.findAll();
+  @Get('workspaces/:id')
+  findAll(
+    @Param('id') id: string
+) {
+    return this.designAssetService.findAll(id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.designAssetService.findOne(+id);
+  findOne(
+    @Param('id') id: string
+  ) {
+    return this.designAssetService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() DesignAssetDto) {
-    return this.designAssetService.update(+id, DesignAssetDto);
+  @UseInterceptors(FileInterceptor('file'))
+  update(
+    @Param('id') id: string,
+    @Body() designAsset: UpdateDesignAssetDto,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    console.log(designAsset);
+    
+    return this.designAssetService.update(id, designAsset, file);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.designAssetService.remove(+id);
+  remove(
+    @Param('id') id: string) {
+    return this.designAssetService.remove(id);
   }
 }
