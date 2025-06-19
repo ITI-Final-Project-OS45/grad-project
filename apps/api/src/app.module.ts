@@ -10,6 +10,7 @@ import { AuthGuard } from './guards/auth.guards';
 
 import config from './config/config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { WorkspaceMembersModule } from './workspace-members/workspace-members.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AuthModule, // This needs to come before providers that use its exports
     UsersModule,
     WorkspacesModule,
+    WorkspaceMembersModule, // Assuming this is the module for workspace members
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],

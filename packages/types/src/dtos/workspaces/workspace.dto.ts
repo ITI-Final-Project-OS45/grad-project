@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from "class-validator";
+import { UserRole } from "../../enums";
 
 export class WorkspaceDto {
   @IsString()
@@ -8,6 +16,11 @@ export class WorkspaceDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateIf((object, value) => value !== undefined && value !== null)
+  members?: UserRole[];
 
   @IsString()
   @IsOptional()

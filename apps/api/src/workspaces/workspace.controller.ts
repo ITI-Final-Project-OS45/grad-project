@@ -15,6 +15,7 @@ import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
 import type { RequestWithUser } from 'src/interfaces/request-user.interface';
+// import { WorkspaceAuthGuard } from 'src/guards/workspaceAuth.guard';
 
 @UseGuards(AuthGuard)
 @Controller('workspaces')
@@ -29,6 +30,8 @@ export class WorkspaceController {
   ) {
     return this.workspaceService.createWorkspace(workspaceData, req.userId);
   }
+
+  // @UseGuards(WorkspaceAuthGuard)
   @Get(':id')
   getOneWorkspace(@Param('id') workspaceId: string) {
     return this.workspaceService.getOneWorkspace(workspaceId);

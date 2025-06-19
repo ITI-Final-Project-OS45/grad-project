@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
-import type {
+import {
   SignupDto,
   LoginDto,
   ApiResponse,
@@ -70,6 +70,7 @@ export class AuthService {
     };
   }
 
+  // when this login function return internal error 500
   async login(
     loginData: LoginDto,
   ): Promise<ApiResponse<LoginResponse, ApiError>> {
