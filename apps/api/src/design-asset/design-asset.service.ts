@@ -1,36 +1,74 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { DessignAssetDto } from '@repo/types';
+import { ApiError, ApiResponse, CreateDesignAssetDto, DesignAssetDto, UpdateDesignAssetDto } from '@repo/types';
 import { Model } from 'mongoose';
+import { CloudinaryService } from 'nestjs-cloudinary';
 import { DesignAsset, DesignAssetDocument } from 'src/schemas/design-asset.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
+import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
 
 @Injectable()
 export class DesignAssetService {
   constructor(
     @InjectModel(DesignAsset.name) private readonly DesignAssetModel: Model<DesignAssetDocument>,
+    @InjectModel(Workspace.name) private readonly workspaceModel: Model<WorkspaceDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly cloudinaryService: CloudinaryService
   ){}
 
-  create(createDesignAssetDto: DessignAssetDto) {
-    //todo: upload the file to cloudinary and get the link and append the link to the 
-    const assetUrl:string = 'https://assets.justinmind.com/wp-content/uploads/2020/02/free-website-mockups-lawyer.png'
-    const theDocument = {...createDesignAssetDto, assetUrl};
+  async create(designAssetDto: DesignAssetDto, userId: string, file: Express.Multer.File): Promise<ApiResponse<DesignAsset, ApiError>> {
+    const workspaceExists = await this.workspaceModel.findById(designAssetDto.workspaceId).exec();
+    if (!workspaceExists) {
+      throw new NotFoundException({
+        success: false,
+        status: HttpStatus.NOT_FOUND,
+        message: 'Workspace not found',
+        error: 'Workspace does not exist',
+      });
+    }
+    
+    const user = await this.userModel.findById(userId).exec();
+    let url:string;
+    if(file){
+      const {secure_url} = await this.cloudinaryService.uploadFile(file);
+      url = secure_url;
+    }else{
+      url = 'null' //todo add embed link
+    }
+      
+    const createDesignAssetDto: CreateDesignAssetDto  = {...designAssetDto, assetUrl:url, uploadedBy:user!.username};
+    
+    const designAsset =  await this.DesignAssetModel.create(createDesignAssetDto);
 
-    return this.DesignAssetModel.create(theDocument);
+    return {
+      success: true,
+      status: HttpStatus.CREATED,
+      message: 'Desing asset created successfully',
+      data: designAsset,
+    }
+      
   }
 
-  findAll() {
-    return `This action returns all designAsset`;
+  async findAll(workspaceId: string) {
+    return await this.DesignAssetModel.find({workspaceId: workspaceId});
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} designAsset`;
+  async findOne(id: string) {
+    return await this.DesignAssetModel.findById(id);
   }
 
-  update(id: number, updateDesignAssetDto: DessignAssetDto) {
-    return `This action updates a #${id} designAsset:\n${updateDesignAssetDto}`;
+  async update(id: string, updateDesignAsset: UpdateDesignAssetDto, file: Express.Multer.File) {
+    console.log(updateDesignAsset);
+    
+    if(file){
+      const {secure_url:assetUrl} = await this.cloudinaryService.uploadFile(file);
+      return await this.DesignAssetModel.findByIdAndUpdate(id, { $set: {...updateDesignAsset, assetUrl} }, { new: true } );
+    }else{
+      return await this.DesignAssetModel.findByIdAndUpdate(id, { $set: updateDesignAsset }, { new: true } );
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} designAsset`;
+  async remove(id: string) {
+    return await this.DesignAssetModel.findByIdAndDelete(id);
   }
 }

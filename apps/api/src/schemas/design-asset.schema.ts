@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { DesignAssetType } from "@repo/types";
 import { Document, Types } from "mongoose";
 
 export interface DesignAssetDocument extends DesignAsset, Document {
@@ -11,7 +12,7 @@ export class DesignAsset {
     @Prop({ required:true, type: Types.ObjectId, ref: 'Workspace' })
     workspaceId!: Types.ObjectId;
 
-    @Prop({type: String, required:true})
+    @Prop({type: String, required:true, enum: DesignAssetType})
     type!: string; // Figma, Mockup
 
     @Prop({type: String, required: true})
@@ -19,11 +20,8 @@ export class DesignAsset {
 
     @Prop({type: String})
     uploadedBy!: string; // users.username
-
-    // @Prop()
-    // uploadedAt!: Date;
     
-    @Prop({type: String, required: true})
+    @Prop({type: String, required: true, match: /[0-9]\.[0-9]\.[0-9]/})
     version!: string;
     
     @Prop({type: String})
