@@ -8,12 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
-import {
-  ApiError,
-  ApiResponse,
-  WorkspaceDto,
-  WorkspaceResponse,
-} from '@repo/types';
+import { ApiError, ApiResponse, WorkspaceDto } from '@repo/types';
 
 @Injectable()
 export class WorkspaceService {
@@ -28,6 +23,13 @@ export class WorkspaceService {
     try {
       const newWorkspace = await this.workspaceModel.create({
         ...workspaceData,
+        members: [
+          {
+            userId: createdBy,
+            role: 'manager', // Assuming the creator is the manager
+            joinedAt: new Date(),
+          },
+        ],
         createdBy,
       });
 
@@ -69,7 +71,10 @@ export class WorkspaceService {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    const allWorkspaces = await this.workspaceModel.find({ createdBy: userId });
+    //TODO: check on the memebers
+    const allWorkspaces = await this.workspaceModel.find({
+      'members.userId': userId,
+    });
     if (!allWorkspaces) {
       throw new NotFoundException("the user doesn't has workspaces");
     }

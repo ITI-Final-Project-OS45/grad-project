@@ -1,4 +1,5 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
+import { WorkspaceMemberDto } from '@repo/types';
 import { Document, Types } from 'mongoose';
 
 export interface WorkspaceDocument extends Workspace, Document {
@@ -13,6 +14,22 @@ export class Workspace {
 
   @Prop()
   description?: string;
+
+  @Prop({
+    type: [
+      {
+        userId: {
+          type: Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        role: { type: String, required: true },
+        joinedAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  members!: WorkspaceMemberDto[];
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy!: string; // user.username

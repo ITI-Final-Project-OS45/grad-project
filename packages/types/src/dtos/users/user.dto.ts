@@ -1,9 +1,6 @@
 import { IsString, IsEmail, IsDate, IsArray, IsMongoId } from "class-validator";
 
 export class UserDto {
-  @IsMongoId()
-  _id!: string;
-
   @IsString()
   username!: string;
 

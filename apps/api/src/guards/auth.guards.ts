@@ -8,6 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { JwtPayload } from '@repo/types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -24,7 +25,7 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwtService.verify<{ userId: string }>(token);
+      const payload = this.jwtService.verify<JwtPayload>(token);
       request.userId = payload.userId;
     } catch (err) {
       Logger.error((err as Error).message);
