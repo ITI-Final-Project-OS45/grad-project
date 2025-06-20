@@ -11,6 +11,7 @@ import { AuthGuard } from './guards/auth.guards';
 import config from './config/config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { ReleasesModule } from './releases/releases.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ReleasesModule } from './releases/releases.module';
     UsersModule,
     WorkspacesModule,
     ReleasesModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
