@@ -561,6 +561,10 @@ export const queryKeys = {
     lists: () => ["workspaces", "list"] as const,
     detail: (id: string) => ["workspaces", "detail", id] as const,
   },
+
+  designs: {
+    lists: () => ["desings", "list"] as const,
+  }
 } as const;
 
 // Extend axios types
