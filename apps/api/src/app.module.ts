@@ -13,6 +13,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { ReleasesModule } from './releases/releases.module';
 import { WorkspaceMembersModule } from './workspace-members/workspace-members.module';
 import { DesignAssetModule } from './design-asset/design-asset.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DesignAssetModule } from './design-asset/design-asset.module';
     ReleasesModule,
     WorkspaceMembersModule, // Assuming this is the module for workspace members
     DesignAssetModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
