@@ -1,18 +1,16 @@
 "use client";
 
 import type React from "react";
-import { Edit, MoreHorizontal, Trash2, Users, Calendar, ArrowRight, Folder } from "lucide-react";
+import { Edit, MoreHorizontal, Trash2, Users, Building2, Clock } from "lucide-react";
 import { motion, type Variants } from "framer-motion";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatDistanceToNow } from "date-fns";
 import type { Workspace } from "@/services/workspace.service";
 import Link from "next/link";
 
@@ -25,46 +23,44 @@ interface WorkspaceListItemProps {
 }
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut",
-    },
-  },
-  exit: {
-    opacity: 0,
-    x: 20,
-    transition: {
-      duration: 0.2,
-      ease: "easeIn",
-    },
-  },
-};
-
-const contentVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.03,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const childVariants: Variants = {
-  hidden: { opacity: 0, y: 4 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.2,
-      ease: "easeOut",
+      ease: [0.25, 0.46, 0.45, 0.94],
     },
   },
+  exit: {
+    opacity: 0,
+    scale: 0.98,
+    transition: {
+      duration: 0.15,
+      ease: "easeIn",
+    },
+  },
+};
+
+// Helper function to format relative time
+const formatRelativeTime = (date: Date): string => {
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+  if (diffInMinutes < 1) return "now";
+  if (diffInMinutes < 60) return `${diffInMinutes}m`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays}d`;
+
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) return `${diffInWeeks}w`;
+
+  const diffInMonths = Math.floor(diffInDays / 30);
+  return `${diffInMonths}mo`;
 };
 
 export function WorkspaceListItem({
@@ -75,6 +71,8 @@ export function WorkspaceListItem({
   isDeleting,
 }: WorkspaceListItemProps) {
   const workspaceId = workspace._id;
+  const memberCount = workspace.members?.length || 0;
+  const relativeTime = formatRelativeTime(new Date(workspace.updatedAt));
 
   const handleWorkspaceClick = () => onWorkspaceClick(workspaceId);
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -86,108 +84,82 @@ export function WorkspaceListItem({
 
   return (
     <motion.div variants={itemVariants} initial="hidden" animate="visible" exit="exit" layout>
-      <Card className="group relative overflow-hidden border-0 bg-card hover:shadow-lg transition-all duration-300 cursor-pointer ring-1 ring-border/50 hover:ring-primary/20">
-        {/* Left accent border */}
-        <motion.div
-          className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 group-hover:bg-primary transition-colors duration-300"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-        />
-
-        <CardContent className="relative p-6">
-          <motion.div variants={contentVariants} initial="hidden" animate="visible">
-            <div className="flex items-center justify-between">
-              <div
-                className="flex-1 cursor-pointer"
-                onClick={handleWorkspaceClick}
-                onKeyDown={handleKeyDown}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Icon */}
-                  <motion.div variants={childVariants}>
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
-                      <Folder className="h-6 w-6 text-primary/70" />
-                    </div>
-                  </motion.div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <motion.div variants={childVariants} className="flex items-center gap-3">
-                      <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors duration-200 truncate">
-                        {workspace.name}
-                      </h3>
-                    </motion.div>
-
-                    <motion.p variants={childVariants} className="text-sm text-muted-foreground line-clamp-1 mb-2">
-                      {workspace.description || "No description provided"}
-                    </motion.p>
-                  </div>
+      <Card className="group relative bg-card hover:bg-accent/5 border border-border hover:border-primary/20 transition-all duration-200">
+        <CardContent className="p-0">
+          <div className="flex items-center">
+            {/* Main clickable area */}
+            <div
+              className="flex-1 flex items-center gap-4 p-4 cursor-pointer"
+              onClick={handleWorkspaceClick}
+              onKeyDown={handleKeyDown}
+              role="button"
+              tabIndex={0}
+            >
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/15 group-hover:border-primary/30 transition-all duration-200">
+                  <Building2 className="h-6 w-6 text-primary" />
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-background/80">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background border-border shadow-lg">
-                    <DropdownMenuItem
-                      onClick={() => onEditWorkspace(workspaceId)}
-                      className="hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDeleteWorkspace(workspaceId)}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* Content */}
+              <div className="flex-1 min-w-0 space-y-1">
+                <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors duration-200 truncate">
+                  {workspace.name}
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
+                  {workspace.description || "No description provided"}
+                </p>
+
+                {/* Metadata row */}
+                <div className="flex items-center gap-4 pt-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    <span>{memberCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{relativeTime}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </motion.div>
+
+            {/* Actions area - separate from clickable area */}
+            <div className="flex-shrink-0 flex items-center gap-1 px-4 py-4 border-l border-border/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
+                asChild
+              >
+                <Link href={`/workspaces/${workspaceId}`}>Open</Link>
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem onClick={() => onEditWorkspace(workspaceId)} className="text-sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onDeleteWorkspace(workspaceId)}
+                    className="text-sm text-destructive focus:text-destructive"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <motion.div variants={childVariants} className="flex items-center gap-6 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" />
-              <span>5 members</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>Updated {formatDistanceToNow(new Date(workspace.updatedAt), { addSuffix: true })}</span>
-            </div>
-          </motion.div>
-          <Button
-            size="lg"
-            className="flex items-center gap-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            asChild
-          >
-            <Link href={`/workspaces/${workspaceId}`}>
-              <span className="font-medium">Open</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </Button>
-        </CardFooter>
       </Card>
     </motion.div>
   );

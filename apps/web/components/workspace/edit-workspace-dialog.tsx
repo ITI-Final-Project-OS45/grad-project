@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Loader2, Edit3, Sparkles } from "lucide-react";
+import { useWorkspace, useWorkspaceById } from "@/hooks/use-workspace";
+import { editWorkspaceSchema, type EditWorkspaceFormData } from "@/lib/schemas/workspace-schemas";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Edit3, Sparkles } from "lucide-react";
-import { useWorkspace, useWorkspaceById } from "@/hooks/use-workspace";
-
-const editWorkspaceSchema = z.object({
-  name: z.string().min(1, "Workspace name is required").max(100, "Name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
-});
-
-type EditWorkspaceFormData = z.infer<typeof editWorkspaceSchema>;
 
 interface EditWorkspaceDialogProps {
   workspaceId: string;
