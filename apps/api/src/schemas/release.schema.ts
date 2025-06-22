@@ -30,10 +30,6 @@ export class Release {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   deployedBy?: Types.ObjectId;
 
-  //  TODO: Uncomment when Task/Development schema is available
-  // @Prop({ type: [{ type: Types.ObjectId, ref: 'Task' }], default: [] })
-  // associatedTasks!: Types.ObjectId[];
-
   @Prop({ type: String, enum: QAStatus, default: QAStatus.PENDING })
   qaStatus!: QAStatus;
 
