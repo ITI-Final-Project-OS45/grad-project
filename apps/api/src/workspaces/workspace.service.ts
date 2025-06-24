@@ -9,12 +9,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
 import { ApiError, ApiResponse, WorkspaceDto } from '@repo/types';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
   constructor(
     @InjectModel(Workspace.name)
     private readonly workspaceModel: Model<WorkspaceDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
   async createWorkspace(
     workspaceData: WorkspaceDto,
@@ -26,12 +29,27 @@ export class WorkspaceService {
         members: [
           {
             userId: createdBy,
-            role: 'manager', // Assuming the creator is the manager
+            role: 'manager',
             joinedAt: new Date(),
           },
         ],
         createdBy,
       });
+      if (!newWorkspace) {
+        throw new BadRequestException('Failed to create workspace');
+      }
+
+      // bidirectional relationship
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        createdBy,
+        {
+          $push: { workspaces: newWorkspace._id },
+        },
+        { new: true },
+      );
+      if (!updatedUser) {
+        throw new BadRequestException('Failed to update user with workspace');
+      }
 
       return {
         success: true,

@@ -148,8 +148,6 @@ export class ReleaseService {
           new: true,
           runValidators: true,
         })
-        // TODO: Uncomment when Task/Development schema is available
-        // .populate('associatedTasks')
         .populate('bugs')
         .populate('hotfixes')
         .exec();
@@ -226,9 +224,7 @@ export class ReleaseService {
   async updateQAStatus(
     releaseId: string,
     qaStatus: QAStatus,
-    userId: string,
   ): Promise<ApiResponse<Release, ApiError>> {
-    // TODO: Validate that the user is authorized to update QA status
     try {
       const updatedRelease = await this.releaseModel.findByIdAndUpdate(
         releaseId,

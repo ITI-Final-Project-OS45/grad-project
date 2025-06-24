@@ -14,6 +14,8 @@ import { ReleasesModule } from './releases/releases.module';
 import { WorkspaceMembersModule } from './workspace-members/workspace-members.module';
 import { DesignAssetModule } from './design-asset/design-asset.module';
 import { TasksModule } from './tasks/tasks.module';
+import { BugsModule } from './bugs/bugs.module';
+import { HotfixesModule } from './hotfixes/hotfixes.module';
 
 @Module({
   imports: [
@@ -46,8 +48,9 @@ import { TasksModule } from './tasks/tasks.module';
     DesignAssetModule,
     ReleasesModule,
     WorkspaceMembersModule, // Assuming this is the module for workspace members
-    DesignAssetModule,
     TasksModule,
+    BugsModule,
+    HotfixesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
