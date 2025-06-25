@@ -55,27 +55,33 @@ export class ReleaseService {
     workspaceId: string,
   ): Promise<ApiResponse<Release[], ApiError>> {
     try {
+      const workspaceExists = await this.workspaceModel
+        .findById(workspaceId)
+        .exec();
+
+      if (!workspaceExists) {
+        throw new NotFoundException({
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          message: 'Workspace not found',
+          error: 'Workspace does not exist',
+        });
+      }
+
       const releases = await this.releaseModel
         .find({ workspaceId })
-        // TODO: Uncomment when Task/Development schema is available
-        // .populate('associatedTasks')
+
         .populate('bugs')
         .populate('hotfixes')
         .exec();
 
-      if (!releases || releases.length === 0) {
-        throw new NotFoundException({
-          success: false,
-          status: HttpStatus.NOT_FOUND,
-          message: 'No releases found for this workspace',
-          error: 'Releases not found',
-        });
-      }
-
       return {
         success: true,
         status: HttpStatus.OK,
-        message: 'Releases retrieved successfully',
+        message:
+          releases.length > 0
+            ? 'Releases retrieved successfully'
+            : 'No releases found for this workspace',
         data: releases,
       };
     } catch (error) {
@@ -92,8 +98,6 @@ export class ReleaseService {
     try {
       const release = await this.releaseModel
         .findById(releaseId)
-        // TODO: Uncomment when Task/Development schema is available
-        // .populate('associatedTasks')
         .populate('bugs')
         .populate('hotfixes')
         .exec();
@@ -144,8 +148,6 @@ export class ReleaseService {
           new: true,
           runValidators: true,
         })
-        // TODO: Uncomment when Task/Development schema is available
-        // .populate('associatedTasks')
         .populate('bugs')
         .populate('hotfixes')
         .exec();
@@ -222,9 +224,7 @@ export class ReleaseService {
   async updateQAStatus(
     releaseId: string,
     qaStatus: QAStatus,
-    userId: string,
   ): Promise<ApiResponse<Release, ApiError>> {
-    // TODO: Validate that the user is authorized to update QA status
     try {
       const updatedRelease = await this.releaseModel.findByIdAndUpdate(
         releaseId,

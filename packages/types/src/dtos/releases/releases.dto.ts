@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsDateString,
-  IsOptional,
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-} from "class-validator";
+import { IsString, IsDateString, IsOptional, IsArray, IsEnum, IsNotEmpty } from "class-validator";
 import { QAStatus, HotfixStatus } from "../../enums/index";
 import { BugSeverity, BugStatus } from "../../enums/bug.enum";
 
@@ -140,10 +133,6 @@ export class CreateHotfixDto {
   @IsString()
   @IsNotEmpty()
   description!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  bugId!: string;
 
   @IsOptional()
   @IsArray()

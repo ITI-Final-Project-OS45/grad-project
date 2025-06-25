@@ -42,9 +42,6 @@ export class Bug {
 
   @Prop()
   actualBehavior?: string;
-
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Hotfix' }], default: [] })
-  hotfixes!: Types.ObjectId[];
 }
 
 export const BugSchema = SchemaFactory.createForClass(Bug);

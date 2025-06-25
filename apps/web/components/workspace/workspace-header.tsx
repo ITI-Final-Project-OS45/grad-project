@@ -1,0 +1,49 @@
+"use client";
+
+import { Users, Calendar, Settings, Factory } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Workspace } from "@/services/workspace.service";
+
+interface WorkspaceHeaderProps {
+  workspace: Workspace;
+  onSettingsClick?: () => void;
+  onMembersClick?: () => void;
+}
+
+export function WorkspaceHeader({ workspace, onSettingsClick, onMembersClick }: WorkspaceHeaderProps) {
+  return (
+    <header className="border-b bg-card">
+      <div className="container mx-auto px-6 py-8 max-w-6xl">
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Factory className="w-5 h-5 text-primary" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-foreground">{workspace.name}</h1>
+              {workspace.description && <p className="text-muted-foreground max-w-2xl">{workspace.description}</p>}
+            </div>
+
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>Created {new Date(workspace.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onMembersClick}>
+              <Users className="w-4 h-4 mr-2" />
+              Members
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}

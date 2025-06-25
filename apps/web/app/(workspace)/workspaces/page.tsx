@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Plus, Search, Grid3X3, List, Sparkles, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,23 @@ export default function WorkspacesPage() {
 
   const router = useRouter();
   const { data: workspaces, error, isLoading } = useWorkspaces();
+
+  // Calculate unique team members across all workspaces (including current user)
+  const uniqueTeamMembersCount = useMemo(() => {
+    if (!workspaces || workspaces.length === 0) return 0;
+
+    const uniqueUserIds = new Set<string>();
+
+    workspaces.forEach((workspace) => {
+      if (workspace.members && workspace.members.length > 0) {
+        workspace.members.forEach((member) => {
+          uniqueUserIds.add(member.userId);
+        });
+      }
+    });
+
+    return uniqueUserIds.size;
+  }, [workspaces]);
 
   const handleWorkspaceClick = (workspaceId: string) => {
     router.push(`/workspaces/${workspaceId}`);
@@ -238,8 +255,8 @@ export default function WorkspacesPage() {
               </div>
               <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Team Members</span>
             </div>
-            <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">47</p>
-            <p className="text-sm text-purple-600/70 dark:text-purple-400/70">Across all workspaces</p>
+            <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{uniqueTeamMembersCount}</p>
+            <p className="text-sm text-purple-600/70 dark:text-purple-400/70">Unique collaborators</p>
           </motion.div>
         </div>
       </motion.div>

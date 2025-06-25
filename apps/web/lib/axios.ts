@@ -549,6 +549,11 @@ export const serverApi = {
 
 // Query keys factory for TanStack Query
 export const queryKeys = {
+  // Auth endpoints
+  auth: {
+    current: () => ["auth", "current"] as const,
+  },
+
   // Users endpoints: /api/v1/users/*
   users: {
     lists: () => ["users", "list"] as const,
@@ -560,6 +565,13 @@ export const queryKeys = {
   workspaces: {
     lists: () => ["workspaces", "list"] as const,
     detail: (id: string) => ["workspaces", "detail", id] as const,
+  },
+
+  // Releases endpoints: /api/v1/releases/*
+  releases: {
+    lists: () => ["releases", "list"] as const,
+    detail: (id: string) => ["releases", "detail", id] as const,
+    byWorkspace: (workspaceId: string) => ["releases", "workspace", workspaceId] as const,
   },
 } as const;
 

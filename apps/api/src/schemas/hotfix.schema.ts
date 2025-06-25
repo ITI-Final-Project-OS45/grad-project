@@ -13,9 +13,6 @@ export class Hotfix {
   @Prop({ required: true })
   description!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Bug', required: true })
-  bugId!: Types.ObjectId;
-
   @Prop({ type: Types.ObjectId, ref: 'Release', required: true })
   releaseId!: Types.ObjectId;
 

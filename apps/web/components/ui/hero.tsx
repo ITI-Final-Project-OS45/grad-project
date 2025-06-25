@@ -1,10 +1,17 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import RotatingText from "@/components/ui/rotating-text";
 import { ArrowRight, Play } from "lucide-react";
-import { HERO_ROTATING_TEXTS, HERO_TEXT_CONFIG } from "@/constants/hero";
-
+import { HERO_TEXT_CONFIG } from "@/constants/hero";
+import { Fragment, useEffect, useState } from "react";
+import { tokenManager } from "@/lib/token";
 export const Hero = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(tokenManager.isAuthenticated());
+  }, []);
   return (
     <section className="bg-background py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto text-center">
@@ -40,17 +47,28 @@ export const Hero = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link href="/signup">
-            <Button size="lg">
-              Get Started
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link href="/workspaces">
+              <Button size="lg">
+                Go to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          ) : (
+            <Fragment>
+              <Link href="/signup">
+                <Button size="lg">
+                  Get Started
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
 
-          <Button variant="secondary" size="lg">
-            <Play className="h-4 w-4" />
-            Watch Demo
-          </Button>
+              <Button variant="secondary" size="lg">
+                <Play className="h-4 w-4" />
+                Watch Demo
+              </Button>
+            </Fragment>
+          )}
         </div>
       </div>
     </section>

@@ -22,31 +22,13 @@ export class UserService {
       .find()
       .select('-password')
       .populate<{ workspaces: WorkspaceDocument[] }>('workspaces')
+      .lean<UserResponse[]>()
       .exec();
-
-    const data: UserResponse[] = users.map((u) => {
-      return {
-        _id: String(u._id),
-        username: u.username,
-        displayName: u.displayName,
-        email: u.email,
-        workspaces: u.workspaces.map((w) => ({
-          _id: String(w._id),
-          name: w.name,
-          description: w.description,
-          createdBy: w.createdBy.toString(),
-          createdAt: w.createdAt.toISOString(),
-          updatedAt: w.updatedAt.toISOString(),
-        })),
-        createdAt: u.createdAt.toISOString(),
-        updatedAt: u.updatedAt.toISOString(),
-      };
-    });
 
     return {
       success: true,
       status: HttpStatus.OK,
-      data,
+      data: users,
       message: 'Users retrieved successfully',
     };
   }
@@ -62,34 +44,17 @@ export class UserService {
       .findById(userId)
       .select('-password')
       .populate<{ workspaces: WorkspaceDocument[] }>('workspaces')
+      .lean<UserResponse>()
       .exec();
-    console.log(`User found: ${user ? String(user._id) : 'not found'}`);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const data: UserResponse = {
-      _id: String(user._id),
-      username: user.username,
-      displayName: user.displayName,
-      email: user.email,
-      workspaces: user.workspaces.map((w) => ({
-        _id: String(w._id),
-        name: w.name,
-        description: w.description,
-        createdBy: w.createdBy.toString(),
-        createdAt: w.createdAt.toISOString(),
-        updatedAt: w.updatedAt.toISOString(),
-      })),
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
-
     return {
       success: true,
       status: HttpStatus.OK,
-      data,
+      data: user,
       message: 'User retrieved successfully',
     };
   }
@@ -101,25 +66,19 @@ export class UserService {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    const u = await this.userModel
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(userId, { $set: data }, { new: true })
+      .select('-password')
+      .lean<UserResponse>()
       .exec();
-    if (!u) {
+    if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
-    const updated: UserResponse = {
-      _id: String(u._id),
-      username: u.username,
-      displayName: u.displayName,
-      email: u.email,
-      workspaces: [],
-      createdAt: u.createdAt.toISOString(),
-      updatedAt: u.updatedAt.toISOString(),
-    };
+
     return {
       success: true,
       status: HttpStatus.OK,
-      data: updated,
+      data: updatedUser,
       message: 'User updated successfully',
     };
   }

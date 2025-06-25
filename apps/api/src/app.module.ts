@@ -12,6 +12,10 @@ import config from './config/config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { ReleasesModule } from './releases/releases.module';
 import { WorkspaceMembersModule } from './workspace-members/workspace-members.module';
+import { DesignAssetModule } from './design-asset/design-asset.module';
+import { TasksModule } from './tasks/tasks.module';
+import { BugsModule } from './bugs/bugs.module';
+import { HotfixesModule } from './hotfixes/hotfixes.module';
 
 @Module({
   imports: [
@@ -41,8 +45,12 @@ import { WorkspaceMembersModule } from './workspace-members/workspace-members.mo
     AuthModule, // This needs to come before providers that use its exports
     UsersModule,
     WorkspacesModule,
+    DesignAssetModule,
     ReleasesModule,
     WorkspaceMembersModule, // Assuming this is the module for workspace members
+    TasksModule,
+    BugsModule,
+    HotfixesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
