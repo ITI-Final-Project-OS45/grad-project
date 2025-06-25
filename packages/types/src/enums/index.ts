@@ -3,3 +3,4 @@ export * from "./release-status.enum";
 export * from "./qa-status.enum";
 export * from "./bug.enum";
 export * from "./hotfix.enum";
+export * from "./workspace-permission.enum";
