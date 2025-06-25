@@ -47,6 +47,7 @@ export class WorkspaceService {
   async getOneWorkspace(
     workspaceId: string,
   ): Promise<ApiResponse<Workspace, ApiError>> {
+    // Membership check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid user ID');
     }
@@ -71,7 +72,6 @@ export class WorkspaceService {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    //TODO: check on the memebers
     const allWorkspaces = await this.workspaceModel.find({
       'members.userId': userId,
     });
@@ -91,6 +91,7 @@ export class WorkspaceService {
     workspaceId: string,
     data: Partial<WorkspaceDto>,
   ): Promise<ApiResponse<Workspace, ApiError>> {
+    // Membership/role check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }
@@ -128,6 +129,7 @@ export class WorkspaceService {
     workspaceId: string,
     userId: string,
   ): Promise<ApiResponse<null, ApiError>> {
+    // Membership/role check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }
