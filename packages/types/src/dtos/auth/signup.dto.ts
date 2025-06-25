@@ -7,7 +7,8 @@ export class SignupDto {
   @IsString()
   displayName!: string;
 
-  @IsEmail()
+  @IsString()
+  @IsEmail({}, { message: "Please enter a valid email address" })
   email!: string;
 
   @IsString()

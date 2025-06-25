@@ -1,6 +1,14 @@
-import { Controller, Post, Body, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpStatus,
+  HttpCode,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type {
+import {
   SignupDto,
   LoginDto,
   RefreshTokenDto,
@@ -11,6 +19,7 @@ import type {
 } from '@repo/types';
 
 @Controller('auth')
+@UsePipes(new ValidationPipe({ whitelist: true }))
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @Post('signup') // ==> /api/v1/auth/signup
