@@ -15,13 +15,6 @@ import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
 import { ApiError } from '@repo/types';
 import { JwtService } from '@nestjs/jwt';
 
-enum OperationType {
-  ADD = 'add',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  GET = 'get',
-}
-
 @Injectable()
 export class WorkspaceMemberService {
   constructor(
@@ -35,23 +28,26 @@ export class WorkspaceMemberService {
     workspaceId: string,
     membernameOrEmail: string,
     role: UserRole,
-    token: string,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
     try {
-      // check it's a valid ID or not
       this.isValidId(workspaceId);
-
-      // check it's a valid role or not
       this.isValidUserRole(role);
 
-      const managerId = this.getMemberId(token);
-
+      // Check if user exists
       const user = await this.getUser(membernameOrEmail);
 
+      // Check if user is already a member
       const workspace = await this.getWorkspace(workspaceId);
+      const isMember = workspace.members.some(
+        (m) => m.userId.toString() === (user._id as Types.ObjectId).toString(),
+      );
+      if (isMember) {
+        throw new BadRequestException(
+          'User is already a member of this workspace',
+        );
+      }
 
-      this.isMangerAndIsMember(workspace, user, managerId, OperationType.ADD);
-
+      // Add member to workspace
       const addNewMember = await this.workspaceModel
         .findByIdAndUpdate(
           workspaceId,
@@ -71,6 +67,15 @@ export class WorkspaceMemberService {
       if (!addNewMember) {
         throw new InternalServerErrorException('Failed to add new member');
       }
+
+      // Add workspaceId to user's workspaces array if not already present
+      await this.userModel
+        .updateOne(
+          { _id: user._id, workspaces: { $ne: workspaceId } },
+          { $push: { workspaces: workspaceId } },
+        )
+        .exec();
+
       return {
         success: true,
         status: HttpStatus.ACCEPTED,
@@ -97,34 +102,19 @@ export class WorkspaceMemberService {
     workspaceId: string,
     membernameOrEmail: string,
     newRole: UserRole,
-    token: string,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
     try {
-      // check it's a valid ID or not
       this.isValidId(workspaceId);
-
-      // check it's a valid role or not
       this.isValidUserRole(newRole);
 
-      const managerId = this.getMemberId(token);
-
+      // No need to check manager/member here; handled by guard
       const user = await this.getUser(membernameOrEmail);
-
-      const workspace = await this.getWorkspace(workspaceId);
-
-      this.isMangerAndIsMember(
-        workspace,
-        user,
-        managerId,
-        OperationType.UPDATE,
-      );
 
       const userId =
         user._id instanceof Types.ObjectId
           ? user._id
           : new Types.ObjectId(user._id as string);
 
-      // Use arrayFilters instead of positional operator for more reliability
       const updatedUser = await this.workspaceModel
         .findOneAndUpdate(
           { _id: workspaceId },
@@ -169,30 +159,19 @@ export class WorkspaceMemberService {
   async deleteMember(
     workspaceId: string,
     membernameOrEmail: string,
-    token: string,
   ): Promise<ApiResponse<null, ApiError>> {
     try {
-      // check it's a valid ID or not
       this.isValidId(workspaceId);
-      const managerId = this.getMemberId(token);
 
+      // No need to check manager/member here; handled by guard
       const user = await this.getUser(membernameOrEmail);
-
-      const workspace = await this.getWorkspace(workspaceId);
-
-      this.isMangerAndIsMember(
-        workspace,
-        user,
-        managerId,
-        OperationType.DELETE,
-      );
 
       const userId =
         user._id instanceof Types.ObjectId
           ? user._id
           : new Types.ObjectId(user._id as string);
 
-      // Use arrayFilters instead of positional operator for more reliability
+      // Remove member from workspace
       const deletedUser = await this.workspaceModel
         .updateOne(
           { _id: workspaceId },
@@ -207,6 +186,11 @@ export class WorkspaceMemberService {
       if (!deletedUser) {
         throw new InternalServerErrorException('Failed to Delete the member');
       }
+
+      // Remove workspaceId from user's workspaces array
+      await this.userModel
+        .updateOne({ _id: user._id }, { $pull: { workspaces: workspaceId } })
+        .exec();
 
       return {
         success: true,
@@ -228,16 +212,12 @@ export class WorkspaceMemberService {
 
   async getAllWorkspaceMembers(
     workspaceId: string,
-    token: string,
   ): Promise<ApiResponse<WorkspaceMember[], ApiError>> {
     try {
-      // check it's a valid ID or not
       this.isValidId(workspaceId);
-      const memberId = this.getMemberId(token);
 
+      // No need to check member here; handled by guard
       const workspace = await this.getWorkspace(workspaceId);
-
-      const member = this.isMember(workspace, memberId);
 
       return {
         success: true,
@@ -257,29 +237,28 @@ export class WorkspaceMemberService {
     }
   }
 
-  async getOneWorkspaceMember(
+  async getOneMemberByWorkspace(
     workspaceId: string,
-    membernameOrEmail: string,
-    token: string,
+    memberId: string,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
     try {
-      // check it's a valid ID or not
       this.isValidId(workspaceId);
-      const memberId = this.getMemberId(token);
-      const user = await this.getUser(membernameOrEmail);
+
       const workspace = await this.getWorkspace(workspaceId);
 
-      const requestSenderIsMember = this.isMember(workspace, memberId);
-      const sentUserIsMember = this.isMember(
-        workspace,
-        (user._id as Types.ObjectId).toString(),
+      const member = workspace.members.find(
+        (m) => m.userId.toString() === memberId,
       );
+
+      if (!member) {
+        throw new NotFoundException('Member not found in workspace');
+      }
 
       return {
         success: true,
         status: HttpStatus.OK,
         message: 'Member found successfully',
-        data: sentUserIsMember,
+        data: member,
       };
     } catch (error) {
       console.error('Error in create method:', error);
@@ -292,8 +271,6 @@ export class WorkspaceMemberService {
       throw new InternalServerErrorException('An unexpected error occurred');
     }
   }
-
-  // private get
 
   private isValidUserRole(role: string): void {
     if (!Object.values(UserRole).includes(role as UserRole)) {
@@ -337,62 +314,5 @@ export class WorkspaceMemberService {
       throw new NotFoundException('Workspace not found');
     }
     return workspace;
-  }
-
-  private isMangerAndIsMember(
-    workspace: WorkspaceDocument,
-    user: UserDocument,
-    managerId: string,
-    operationType: OperationType,
-  ): void {
-    let isManager: boolean = false;
-    let isMember: boolean = false;
-
-    for (const member of workspace.members) {
-      if (isManager && isMember) {
-        break;
-      }
-      if (
-        !isManager &&
-        member.userId.toString() === managerId &&
-        member.role === UserRole.Manager
-      ) {
-        isManager = true;
-      }
-      if (
-        !isMember &&
-        member.userId.toString() === (user._id as Types.ObjectId).toString()
-      ) {
-        isMember = true;
-      }
-    }
-
-    if (!isManager) {
-      throw new UnauthorizedException('You are not authorized to add members');
-    }
-
-    if (isMember && operationType === OperationType.ADD) {
-      throw new InternalServerErrorException('User already exists');
-    } else if (
-      !isMember &&
-      (operationType === OperationType.UPDATE ||
-        operationType === OperationType.DELETE)
-    ) {
-      throw new NotFoundException("User isn't a member");
-    }
-  }
-
-  private isMember(workspace: Workspace, memberId: string): WorkspaceMember {
-    let isMember: WorkspaceMember | undefined;
-    for (const member of workspace.members) {
-      if (member.userId.toString() === memberId) {
-        isMember = member;
-        break;
-      }
-    }
-    if (isMember) {
-      return isMember;
-    }
-    throw new UnauthorizedException('You are not a member');
   }
 }
