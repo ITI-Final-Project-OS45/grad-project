@@ -16,6 +16,7 @@ import { DesignAssetModule } from './design-asset/design-asset.module';
 import { TasksModule } from './tasks/tasks.module';
 import { BugsModule } from './bugs/bugs.module';
 import { HotfixesModule } from './hotfixes/hotfixes.module';
+import { InvitesModule } from './invites/invites.module';
 
 @Module({
   imports: [
@@ -42,15 +43,16 @@ import { HotfixesModule } from './hotfixes/hotfixes.module';
 
       inject: [ConfigService],
     }),
-    AuthModule, // This needs to come before providers that use its exports
+    AuthModule,
     UsersModule,
     WorkspacesModule,
     DesignAssetModule,
     ReleasesModule,
-    WorkspaceMembersModule, // Assuming this is the module for workspace members
+    WorkspaceMembersModule,
     TasksModule,
     BugsModule,
     HotfixesModule,
+    InvitesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthGuard],
