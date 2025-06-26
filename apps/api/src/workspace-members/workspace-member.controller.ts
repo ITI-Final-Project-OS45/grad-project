@@ -8,6 +8,8 @@ import {
   Post,
   UseGuards,
   SetMetadata,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiError, ApiResponse, UserRole } from '@repo/types';
 import { WorkspaceMember } from 'src/schemas/workspace-member.schema';
@@ -16,14 +18,16 @@ import { AuthGuard } from '../guards/auth.guards';
 import { WorkspaceAuthorizationGuard } from '../guards/workspace-authorization.guard';
 import { WorkspacePermission } from '@repo/types';
 
+@UseGuards(AuthGuard)
 @Controller('workspace-member')
+@UsePipes(new ValidationPipe({ whitelist: true }))
 export class WorkspaceMemberController {
   constructor(
     private readonly workspaceMemberService: WorkspaceMemberService,
   ) {}
 
   @Post(':id') // workspaceId
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async addMember(
     @Param('id') workspaceId: string,
@@ -37,10 +41,8 @@ export class WorkspaceMemberController {
     );
   }
 
-  //TODO: update member role
-
   @Patch(':id') // workspaceId
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   @SetMetadata('workspaceGuardOptions', {
     workspaceIdParamKey: 'id',
@@ -59,9 +61,8 @@ export class WorkspaceMemberController {
     );
   }
 
-  //TODO: delete member from workspace
   @Delete(':id') // workspaceId
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async deleteMember(
     @Param('id') workspaceId: string,
@@ -73,9 +74,8 @@ export class WorkspaceMemberController {
     );
   }
 
-  //TODO: get member by id from workspace
   @Get(':workspaceId/member/:memberId')
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
   async getOneMemberByWorkspace(
     @Param('workspaceId') workspaceId: string,
@@ -87,9 +87,8 @@ export class WorkspaceMemberController {
     );
   }
 
-  //TODO: get all members of a workspace
   @Get(':id')
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
   async getAllWorkspaceMembers(@Param('id') workspaceId: string) {
     return this.workspaceMemberService.getAllWorkspaceMembers(workspaceId);
