@@ -66,7 +66,7 @@ export class ReleaseController {
     @Body('qaStatus') qaStatus: QAStatus,
     @Req() req: RequestWithUser,
   ): Promise<ApiResponse<Release, ApiError>> {
-    return await this.releasesService.updateQAStatus(id, qaStatus, req.userId);
+    return await this.releasesService.updateQAStatus(id, qaStatus);
   }
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
