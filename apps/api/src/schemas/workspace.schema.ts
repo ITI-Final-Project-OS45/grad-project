@@ -32,7 +32,7 @@ export class Workspace {
   members!: WorkspaceMemberDto[];
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  createdBy!: string; // user.username
+  createdBy!: string; // user.id
 
   @Prop({ type: Types.ObjectId, ref: 'Release', default: [] })
   releases?: Types.ObjectId[];

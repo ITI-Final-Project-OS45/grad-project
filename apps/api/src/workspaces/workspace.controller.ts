@@ -35,7 +35,7 @@ export class WorkspaceController {
 
   // @UseGuards(WorkspaceAuthGuard)
   @Get(':id')
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
   getOneWorkspace(@Param('id') workspaceId: string) {
     return this.workspaceService.getOneWorkspace(workspaceId);
@@ -48,7 +48,7 @@ export class WorkspaceController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   updateWorkspace(
     @Param('id') workspaceId: string,
@@ -61,7 +61,7 @@ export class WorkspaceController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard, WorkspaceAuthorizationGuard)
+  @UseGuards(WorkspaceAuthorizationGuard)
   @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   deleteWorkspace(
     @Param('id') workspaceId: string,
