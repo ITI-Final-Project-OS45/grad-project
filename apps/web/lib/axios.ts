@@ -567,11 +567,38 @@ export const queryKeys = {
     detail: (id: string) => ["workspaces", "detail", id] as const,
   },
 
+  // Invites endpoints: /api/v1/invites/*
+  invites: {
+    userInvites: () => ["invites", "user"] as const,
+    workspaceInvites: (workspaceId: string) => ["invites", "workspace", workspaceId] as const,
+    detail: (id: string) => ["invites", "detail", id] as const,
+  },
+
+  // Workspace Members endpoints: /api/v1/workspace-member/*
+  workspaceMembers: {
+    byWorkspace: (workspaceId: string) => ["workspace-members", "workspace", workspaceId] as const,
+    detail: (workspaceId: string, memberId: string) => ["workspace-members", "detail", workspaceId, memberId] as const,
+  },
+
   // Releases endpoints: /api/v1/releases/*
   releases: {
     lists: () => ["releases", "list"] as const,
     detail: (id: string) => ["releases", "detail", id] as const,
     byWorkspace: (workspaceId: string) => ["releases", "workspace", workspaceId] as const,
+  },
+
+  // Bugs endpoints: /api/v1/bugs/*
+  bugs: {
+    lists: () => ["bugs", "list"] as const,
+    detail: (id: string) => ["bugs", "detail", id] as const,
+    byRelease: (releaseId: string) => ["bugs", "release", releaseId] as const,
+  },
+
+  // Hotfixes endpoints: /api/v1/hotfixes/*
+  hotfixes: {
+    lists: () => ["hotfixes", "list"] as const,
+    detail: (id: string) => ["hotfixes", "detail", id] as const,
+    byRelease: (releaseId: string) => ["hotfixes", "release", releaseId] as const,
   },
 } as const;
 
