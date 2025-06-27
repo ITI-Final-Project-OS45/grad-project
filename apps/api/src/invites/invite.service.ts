@@ -134,7 +134,17 @@ export class InviteService {
   async getInvitesForUser(
     userId: string,
   ): Promise<ApiResponse<Invite[], ApiError>> {
-    const invites = await this.inviteModel.find({ userId }).exec();
+    const invites = await this.inviteModel
+      .find({ userId })
+      .populate({
+        path: 'workspaceId',
+        select: 'name description',
+      })
+      .populate({
+        path: 'invitedBy',
+        select: 'username displayName email',
+      })
+      .exec();
     return {
       success: true,
       status: HttpStatus.OK,
@@ -146,7 +156,13 @@ export class InviteService {
   async getInvitesForWorkspace(
     workspaceId: string,
   ): Promise<ApiResponse<Invite[], ApiError>> {
-    const invites = await this.inviteModel.find({ workspaceId }).exec();
+    const invites = await this.inviteModel
+      .find({ workspaceId })
+      .populate({
+        path: 'userId',
+        select: 'username displayName email',
+      })
+      .exec();
     return {
       success: true,
       status: HttpStatus.OK,
