@@ -11,10 +11,6 @@
  * - Deploy release
  * - Update QA status
  *
- * This service maps frontend data to the exact API format
- * expected by the NestJS backend and transforms responses back
- * to frontend-compatible formats.
- *
  * API Endpoints:
  * - POST /releases                     - Create release
  * - GET /releases/:id                  - Get release by ID
@@ -28,47 +24,27 @@
  */
 
 import { apiClient } from "@/lib/axios";
-import { ApiResponse, ApiError, CreateReleaseDto, QAStatus } from "@repo/types";
+import { ApiResponse, ApiError, CreateReleaseDto, UpdateReleaseDto, ReleaseResponse, QAStatus } from "@repo/types";
 
-// Frontend release type
-export type ReleaseResponse = {
-  _id: string;
-  versionTag: string;
-  workspaceId: string;
-  description: string;
-  plannedDate: string;
-  associatedTasks?: string[];
-  bugs?: string[];
-  hotfixes?: string[];
-  qaStatus: QAStatus;
-  deployedBy?: string;
-  deployedDate?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type Release = ReleaseResponse;
 
-// Create release data type
+// Create release data type for frontend
 export interface CreateReleaseData {
   versionTag: string;
   workspaceId: string;
   description: string;
   plannedDate: string;
-  associatedTasks?: string[];
 }
 
-// Update release data type
+// Update release data type for frontend
 export interface UpdateReleaseData {
   versionTag?: string;
   description?: string;
   plannedDate?: string;
-  associatedTasks?: string[];
 }
 
 // Deploy release data type
-export interface DeployReleaseData {
-  deploymentNotes?: string;
-}
+export type DeployReleaseData = Record<string, never>;
 
 export class ReleaseService {
   private static readonly ENDPOINTS = {
@@ -83,45 +59,41 @@ export class ReleaseService {
    * Create new release
    * Maps to POST /releases
    */
-  static async createRelease(data: CreateReleaseData): Promise<ApiResponse<ReleaseResponse, ApiError>> {
-    // Map to CreateReleaseDto format expected by backend
+  static async createRelease(data: CreateReleaseData): Promise<ApiResponse<Release, ApiError>> {
+    // Map to CreateReleaseDto format
     const releaseData: CreateReleaseDto = {
       versionTag: data.versionTag,
       workspaceId: data.workspaceId,
       description: data.description,
       plannedDate: data.plannedDate,
-      associatedTasks: data.associatedTasks,
     };
 
-    return await apiClient.post<ReleaseResponse>(ReleaseService.ENDPOINTS.RELEASES, releaseData);
+    return await apiClient.post<Release>(ReleaseService.ENDPOINTS.RELEASES, releaseData);
   }
 
   /**
    * Get release by ID
    * Maps to GET /releases/:id
    */
-  static async getReleaseById(releaseId: string): Promise<ApiResponse<ReleaseResponse, ApiError>> {
-    return await apiClient.get<ReleaseResponse>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId));
+  static async getReleaseById(releaseId: string): Promise<ApiResponse<Release, ApiError>> {
+    return await apiClient.get<Release>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId));
   }
 
   /**
    * Get all releases for workspace
    * Maps to GET /releases/workspace/:workspaceId
    */
-  static async getReleasesByWorkspace(workspaceId: string): Promise<ApiResponse<ReleaseResponse[], ApiError>> {
-    return await apiClient.get<ReleaseResponse[]>(ReleaseService.ENDPOINTS.RELEASES_BY_WORKSPACE(workspaceId));
+  static async getReleasesByWorkspace(workspaceId: string): Promise<ApiResponse<Release[], ApiError>> {
+    return await apiClient.get<Release[]>(ReleaseService.ENDPOINTS.RELEASES_BY_WORKSPACE(workspaceId));
   }
 
   /**
    * Update release
    * Maps to PUT /releases/:id
    */
-  static async updateRelease(
-    releaseId: string,
-    data: UpdateReleaseData
-  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
-    // Map to partial CreateReleaseDto format expected by backend
-    const updateData: Partial<CreateReleaseDto> = {};
+  static async updateRelease(releaseId: string, data: UpdateReleaseData): Promise<ApiResponse<Release, ApiError>> {
+    // Map to UpdateReleaseDto format
+    const updateData: UpdateReleaseDto = {};
 
     if (data.versionTag !== undefined) {
       updateData.versionTag = data.versionTag;
@@ -132,30 +104,26 @@ export class ReleaseService {
     if (data.plannedDate !== undefined) {
       updateData.plannedDate = data.plannedDate;
     }
-    if (data.associatedTasks !== undefined) {
-      updateData.associatedTasks = data.associatedTasks;
-    }
 
-    return await apiClient.put<ReleaseResponse>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId), updateData);
+    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId), updateData);
   }
 
   /**
    * Deploy release
    * Maps to PUT /releases/:id/deploy
+   * Note: API doesn't accept any body data, just triggers deploy
    */
-  static async deployRelease(
-    releaseId: string,
-    data?: DeployReleaseData
-  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
-    return await apiClient.put<ReleaseResponse>(ReleaseService.ENDPOINTS.DEPLOY_RELEASE(releaseId), data || {});
+  static async deployRelease(releaseId: string): Promise<ApiResponse<Release, ApiError>> {
+    // API ignores body data, only uses userId from JWT token
+    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.DEPLOY_RELEASE(releaseId));
   }
 
   /**
    * Update QA status
    * Maps to PUT /releases/:id/qa
    */
-  static async updateQAStatus(releaseId: string, qaStatus: QAStatus): Promise<ApiResponse<ReleaseResponse, ApiError>> {
-    return await apiClient.put<ReleaseResponse>(ReleaseService.ENDPOINTS.UPDATE_QA_STATUS(releaseId), { qaStatus });
+  static async updateQAStatus(releaseId: string, qaStatus: QAStatus): Promise<ApiResponse<Release, ApiError>> {
+    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.UPDATE_QA_STATUS(releaseId), { qaStatus });
   }
 
   /**

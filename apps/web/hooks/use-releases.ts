@@ -8,15 +8,9 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ReleaseService, CreateReleaseData, UpdateReleaseData } from "@/services/release.service";
+import { ApiResponse, ApiError, ReleaseResponse, QAStatus } from "@repo/types";
 import { queryKeys } from "@/lib/axios";
-import {
-  ReleaseService,
-  ReleaseResponse,
-  CreateReleaseData,
-  UpdateReleaseData,
-  DeployReleaseData,
-} from "@/services/release.service";
-import { ApiResponse, ApiError, QAStatus } from "@repo/types";
 import { toast } from "sonner";
 
 export const useRelease = () => {
@@ -94,9 +88,9 @@ export const useRelease = () => {
   const deployRelease = useMutation<
     ApiResponse<ReleaseResponse, ApiError>,
     Error,
-    { releaseId: string; data?: DeployReleaseData; workspaceId?: string }
+    { releaseId: string; workspaceId?: string }
   >({
-    mutationFn: ({ releaseId, data }) => ReleaseService.deployRelease(releaseId, data),
+    mutationFn: ({ releaseId }) => ReleaseService.deployRelease(releaseId),
     onSuccess: (response, variables) => {
       if (response.success && response.data) {
         queryClient.setQueryData(queryKeys.releases.detail(variables.releaseId), response.data);

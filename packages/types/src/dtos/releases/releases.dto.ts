@@ -17,11 +17,6 @@ export class CreateReleaseDto {
 
   @IsDateString()
   plannedDate!: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  associatedTasks?: string[];
 }
 
 export class UpdateReleaseDto {
@@ -38,11 +33,6 @@ export class UpdateReleaseDto {
   @IsOptional()
   @IsDateString()
   plannedDate?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  associatedTasks?: string[];
 }
 
 export class DeployReleaseDto {
