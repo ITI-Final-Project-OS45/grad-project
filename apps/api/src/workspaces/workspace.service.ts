@@ -70,7 +70,13 @@ export class WorkspaceService {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const workspace = await this.workspaceModel.findById(workspaceId);
+    const workspace = await this.workspaceModel
+      .findById(workspaceId)
+      .populate({
+        path: 'releases',
+        populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
+      })
+      .exec();
 
     if (!workspace) {
       throw new NotFoundException('workspace not found');
@@ -90,9 +96,14 @@ export class WorkspaceService {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    const allWorkspaces = await this.workspaceModel.find({
-      'members.userId': userId,
-    });
+    const allWorkspaces = await this.workspaceModel
+      .find({
+        'members.userId': userId,
+      })
+      .populate({
+        path: 'releases',
+        populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
+      });
     if (!allWorkspaces) {
       throw new NotFoundException("the user doesn't has workspaces");
     }

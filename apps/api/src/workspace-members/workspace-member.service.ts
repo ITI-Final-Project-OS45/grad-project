@@ -217,16 +217,26 @@ export class WorkspaceMemberService {
       this.isValidId(workspaceId);
 
       // No need to check member here; handled by guard
-      const workspace = await this.getWorkspace(workspaceId);
+      const workspace = await this.workspaceModel
+        .findById(workspaceId)
+        .populate({
+          path: 'members.userId',
+          select: 'username displayName email',
+        })
+        .exec();
+
+      if (!workspace) {
+        throw new NotFoundException('Workspace not found');
+      }
 
       return {
         success: true,
         status: HttpStatus.OK,
-        message: 'Members found  successfully',
+        message: 'Members found successfully',
         data: workspace.members as WorkspaceMember[],
       };
     } catch (error) {
-      console.error('Error in create method:', error);
+      console.error('Error in getAllWorkspaceMembers method:', error);
       if (
         error instanceof NotFoundException ||
         error instanceof UnauthorizedException

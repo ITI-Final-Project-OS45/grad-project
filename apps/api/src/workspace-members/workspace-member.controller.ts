@@ -11,12 +11,16 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiError, ApiResponse, UserRole } from '@repo/types';
+import {
+  ApiError,
+  ApiResponse,
+  UserRole,
+  WorkspacePermission,
+} from '@repo/types';
 import { WorkspaceMember } from 'src/schemas/workspace-member.schema';
 import { WorkspaceMemberService } from './workspace-member.service';
 import { AuthGuard } from '../guards/auth.guards';
 import { WorkspaceAuthorizationGuard } from '../guards/workspace-authorization.guard';
-import { WorkspacePermission } from '@repo/types';
 
 @UseGuards(AuthGuard)
 @Controller('workspace-member')

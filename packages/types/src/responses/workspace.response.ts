@@ -1,4 +1,5 @@
 import { WorkspaceMemberDto } from "../dtos/workspace-members";
+import { ReleaseResponse } from "./release.response";
 
 export interface WorkspaceResponse {
   _id: string;
@@ -8,5 +9,5 @@ export interface WorkspaceResponse {
   members: WorkspaceMemberDto[];
   createdAt: string;
   updatedAt: string;
-  releases?: string[];
+  releases?: ReleaseResponse[];
 }
