@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { FileText, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspaceById } from "@/hooks/use-workspace";
-import { useReleases } from "@/hooks/use-releases";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { WorkspaceStats } from "@/components/workspace/workspace-stats";
 import { WorkspaceProgress } from "@/components/workspace/workspace-progress";
@@ -67,9 +66,9 @@ export default function WorkspacePage() {
   const workspaceId = params.id as string;
 
   const { data: workspace, isLoading: workspaceLoading, error: workspaceError } = useWorkspaceById(workspaceId);
-  const { data: releases = [], isLoading: releasesLoading, error: releasesError } = useReleases(workspaceId);
 
   const stats: WorkspaceStatsType = useMemo(() => {
+    const releases = workspace?.releases || [];
     const activeReleases = releases.filter((release) => !release.deployedDate).length;
     return {
       // TODO: Replace with actual data when available
@@ -80,12 +79,9 @@ export default function WorkspacePage() {
       totalReleases: releases.length,
       activeReleases,
     };
-  }, [workspace?.members, releases]);
+  }, [workspace?.members, workspace?.releases]);
   const handleFeatureClick = (href: string) => {
     router.push(`/workspaces/${workspaceId}${href}`);
-  };
-  const handleSettingsClick = () => {
-    router.push(`/workspaces/${workspaceId}/settings`);
   };
 
   const handleMembersClick = () => {
@@ -106,14 +102,13 @@ export default function WorkspacePage() {
     );
   }
 
-  const isDataLoading = releasesLoading;
-  const hasDataError = releasesError;
+  const isDataLoading = workspaceLoading;
+  const hasDataError = workspaceError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <WorkspaceHeader
         workspace={workspace}
-        onSettingsClick={handleSettingsClick}
         onMembersClick={handleMembersClick}
       />
 
@@ -131,7 +126,7 @@ export default function WorkspacePage() {
               <div>
                 <h4 className="font-medium text-foreground mb-1">Unable to load some data</h4>
                 <p className="text-sm text-muted-foreground">
-                  {releasesError && `Releases: ${(releasesError as Error).message}`}
+                  {workspaceError && `Workspace: ${(workspaceError as Error).message}`}
                 </p>
               </div>
             </div>
