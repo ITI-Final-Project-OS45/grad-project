@@ -3,7 +3,6 @@
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Sparkles, Rocket } from "lucide-react";
 import { useWorkspace } from "@/hooks/use-workspace";
-
-const createWorkspaceSchema = z.object({
-  name: z.string().min(1, "Workspace name is required").max(100, "Name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
-});
-
-type CreateWorkspaceFormData = z.infer<typeof createWorkspaceSchema>;
+import { createWorkspaceSchema, type CreateWorkspaceFormData } from "@/lib/schemas/workspace-schemas";
 
 interface CreateWorkspaceDialogProps {
   open: boolean;

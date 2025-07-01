@@ -29,7 +29,7 @@ export const useAuth = () => {
         tokenManager.setTokens(response.data.accessToken, response.data.refreshToken);
 
         // Invalidate auth queries to refetch fresh data
-        queryClient.invalidateQueries({ queryKey: queryKeys.auth });
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth.current() });
 
         // Redirect to workspaces
         router.push("/workspaces");

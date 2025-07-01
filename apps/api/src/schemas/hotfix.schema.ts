@@ -1,10 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HotfixStatus } from '@repo/types';
 import { Document, Types } from 'mongoose';
 
-export interface HotfixDocument extends Document {
+export interface HotfixDocument extends Hotfix, Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
 @Schema({ timestamps: true })
 export class Hotfix {
   @Prop({ required: true })
@@ -12,9 +14,6 @@ export class Hotfix {
 
   @Prop({ required: true })
   description!: string;
-
-  @Prop({ type: Types.ObjectId, ref: 'Bug', required: true })
-  bugId!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Release', required: true })
   releaseId!: Types.ObjectId;
@@ -24,6 +23,9 @@ export class Hotfix {
 
   @Prop()
   fixedDate?: Date;
+
+  @Prop({ type: String, enum: HotfixStatus, default: HotfixStatus.PENDING })
+  status!: HotfixStatus;
 
   @Prop({ type: [String], default: [] })
   attachedCommits!: string[];

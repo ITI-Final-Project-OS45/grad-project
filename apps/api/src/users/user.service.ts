@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserDocument, User } from '../schemas/user.schema';
 import { WorkspaceDocument } from '../schemas/workspace.schema';
@@ -17,43 +18,13 @@ export class UserService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
-  async findAllUsers(): Promise<ApiResponse<UserResponse[], ApiError>> {
-    const users = await this.userModel
-      .find()
-      .select('-password')
-      .populate<{ workspaces: WorkspaceDocument[] }>('workspaces')
-      .exec();
-
-    const data: UserResponse[] = users.map((u) => {
-      return {
-        _id: String(u._id),
-        username: u.username,
-        displayName: u.displayName,
-        email: u.email,
-        workspaces: u.workspaces.map((w) => ({
-          _id: String(w._id),
-          name: w.name,
-          description: w.description,
-          createdBy: w.createdBy.toString(),
-          createdAt: w.createdAt.toISOString(),
-          updatedAt: w.updatedAt.toISOString(),
-        })),
-        createdAt: u.createdAt.toISOString(),
-        updatedAt: u.updatedAt.toISOString(),
-      };
-    });
-
-    return {
-      success: true,
-      status: HttpStatus.OK,
-      data,
-      message: 'Users retrieved successfully',
-    };
-  }
-
   async findOneUser(
     userId: string,
+    requesterId: string,
   ): Promise<ApiResponse<UserResponse, ApiError>> {
+    if (requesterId !== userId) {
+      throw new ForbiddenException('You are not authorized to view this user');
+    }
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
@@ -62,34 +33,17 @@ export class UserService {
       .findById(userId)
       .select('-password')
       .populate<{ workspaces: WorkspaceDocument[] }>('workspaces')
+      .lean<UserResponse>()
       .exec();
-    console.log(`User found: ${user ? String(user._id) : 'not found'}`);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const data: UserResponse = {
-      _id: String(user._id),
-      username: user.username,
-      displayName: user.displayName,
-      email: user.email,
-      workspaces: user.workspaces.map((w) => ({
-        _id: String(w._id),
-        name: w.name,
-        description: w.description,
-        createdBy: w.createdBy.toString(),
-        createdAt: w.createdAt.toISOString(),
-        updatedAt: w.updatedAt.toISOString(),
-      })),
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
-
     return {
       success: true,
       status: HttpStatus.OK,
-      data,
+      data: user,
       message: 'User retrieved successfully',
     };
   }
@@ -97,34 +51,42 @@ export class UserService {
   async updateUser(
     userId: string,
     data: Partial<UserDto>,
+    requesterId: string,
   ): Promise<ApiResponse<UserResponse, ApiError>> {
+    if (requesterId !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to update this user',
+      );
+    }
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    const u = await this.userModel
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(userId, { $set: data }, { new: true })
+      .select('-password')
+      .lean<UserResponse>()
       .exec();
-    if (!u) {
+    if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
-    const updated: UserResponse = {
-      _id: String(u._id),
-      username: u.username,
-      displayName: u.displayName,
-      email: u.email,
-      workspaces: [],
-      createdAt: u.createdAt.toISOString(),
-      updatedAt: u.updatedAt.toISOString(),
-    };
+
     return {
       success: true,
       status: HttpStatus.OK,
-      data: updated,
+      data: updatedUser,
       message: 'User updated successfully',
     };
   }
 
-  async deleteUser(userId: string): Promise<ApiResponse<null, ApiError>> {
+  async deleteUser(
+    userId: string,
+    requesterId: string,
+  ): Promise<ApiResponse<null, ApiError>> {
+    if (requesterId !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to delete this user',
+      );
+    }
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }

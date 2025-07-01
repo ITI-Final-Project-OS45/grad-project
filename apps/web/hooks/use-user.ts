@@ -15,14 +15,14 @@ import { UserService, User, UpdateProfileData } from "@/services/user.service";
 import { ApiResponse, ApiError } from "@repo/types";
 import { tokenManager } from "@/lib/token";
 import { useTokenRefresh } from "./use-token-refresh";
+import { toast } from "sonner";
 
 export const useUser = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const userId = tokenManager.getUserId();
 
-  // Add automatic token refresh
-  const { refreshToken, isTokenExpiringSoon, getTokenTimeLeft, getTokenExpiryDate } = useTokenRefresh();
+  useTokenRefresh();
 
   // Query: Get current user profile (primary query)
   const currentUser = useQuery<User, Error>({
@@ -54,12 +54,22 @@ export const useUser = () => {
   // Mutation: Update user profile
   const updateProfile = useMutation<ApiResponse<User, ApiError>, Error, { userId: string; data: UpdateProfileData }>({
     mutationFn: ({ userId: targetUserId, data }) => UserService.updateProfile(targetUserId, data),
-    onSuccess: (_, variables) => {
-      // Only invalidate specific user data to prevent cascading
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.userId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
-      // Only invalidate users list if it was actually fetched
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    onSuccess: (response, variables) => {
+      if (response.success) {
+        // Only invalidate specific user data to prevent cascading
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.userId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
+        // Only invalidate users list if it was actually fetched
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+
+        // Show success toast
+        toast.success("Profile updated successfully!");
+      }
+    },
+    onError: (error: unknown) => {
+      const errorResponse = error as Error;
+      // Show error toast
+      toast.error(errorResponse.message || "Failed to update profile. Please try again.");
     },
   });
 
@@ -67,10 +77,18 @@ export const useUser = () => {
   const deleteAccount = useMutation<ApiResponse<{ message: string }, ApiError>, Error, string>({
     mutationFn: (targetUserId) => UserService.deleteAccount(targetUserId),
     onSuccess: () => {
+      // Show success toast
+      toast.success("Account deleted successfully. We're sorry to see you go!");
+
       // Clear all data and redirect to sign in
       tokenManager.clearTokens();
       queryClient.clear();
       router.push("/signin");
+    },
+    onError: (error: unknown) => {
+      const errorResponse = error as Error;
+      // Show error toast
+      toast.error(errorResponse.message || "Failed to delete account. Please try again.");
     },
   });
 

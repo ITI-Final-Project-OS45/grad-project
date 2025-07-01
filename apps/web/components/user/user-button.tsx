@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Briefcase } from "lucide-react";
+import { LogOut, Briefcase, User, Settings } from "lucide-react";
 import { useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
@@ -54,6 +54,22 @@ export function UserButton() {
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href="/profile" className="text-foreground">
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="text-foreground">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Link>
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

@@ -12,6 +12,7 @@ import { Briefcase, LogOut, Menu, X } from "lucide-react";
 import { NAV_ITEMS } from "@/constants/navigation";
 import { tokenManager } from "@/lib/token";
 import { UserButton } from "../user/user-button";
+import { NotificationButton } from "./notification-button";
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -380,7 +381,10 @@ export const Header = () => {
               <ThemeToggleDropdown />
               <div className="hidden lg:flex items-center space-x-3">
                 {isAuthenticated ? (
-                  <UserButton />
+                  <>
+                    <NotificationButton />
+                    <UserButton />
+                  </>
                 ) : (
                   <>
                     <Button asChild variant="secondary">

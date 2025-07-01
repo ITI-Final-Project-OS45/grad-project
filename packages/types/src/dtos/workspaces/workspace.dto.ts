@@ -7,6 +7,7 @@ import {
   ValidateIf,
 } from "class-validator";
 import { UserRole } from "../../enums";
+import { WorkspaceMemberDto } from "../workspace-members";
 
 export class WorkspaceDto {
   @IsString()
@@ -20,7 +21,7 @@ export class WorkspaceDto {
   @IsArray()
   @IsOptional()
   @ValidateIf((object, value) => value !== undefined && value !== null)
-  members?: UserRole[];
+  members?: WorkspaceMemberDto[];
 
   @IsString()
   @IsOptional()

@@ -10,12 +10,14 @@ import {
   ValidationPipe,
   UseGuards,
   Req,
+  SetMetadata,
 } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
+import { WorkspaceAuthorizationGuard } from '../guards/workspace-authorization.guard';
+import { WorkspacePermission } from '@repo/types';
 import type { RequestWithUser } from 'src/interfaces/request-user.interface';
-// import { WorkspaceAuthGuard } from 'src/guards/workspaceAuth.guard';
 
 @UseGuards(AuthGuard)
 @Controller('workspaces')
@@ -33,6 +35,8 @@ export class WorkspaceController {
 
   // @UseGuards(WorkspaceAuthGuard)
   @Get(':id')
+  @UseGuards(WorkspaceAuthorizationGuard)
+  @SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
   getOneWorkspace(@Param('id') workspaceId: string) {
     return this.workspaceService.getOneWorkspace(workspaceId);
   }
@@ -44,6 +48,8 @@ export class WorkspaceController {
   }
 
   @Patch(':id')
+  @UseGuards(WorkspaceAuthorizationGuard)
+  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   updateWorkspace(
     @Param('id') workspaceId: string,
     @Body() data: Partial<WorkspaceDto>,
@@ -55,6 +61,8 @@ export class WorkspaceController {
   }
 
   @Delete(':id')
+  @UseGuards(WorkspaceAuthorizationGuard)
+  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   deleteWorkspace(
     @Param('id') workspaceId: string,
     @Req() req: RequestWithUser,

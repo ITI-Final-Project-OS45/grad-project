@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { BugSeverity, BugStatus } from '@repo/types';
 
-export interface BugDocument extends Document {
+export interface BugDocument extends Bug, Document {
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,9 +42,6 @@ export class Bug {
 
   @Prop()
   actualBehavior?: string;
-
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Hotfix' }], default: [] })
-  hotfixes!: Types.ObjectId[];
 }
 
 export const BugSchema = SchemaFactory.createForClass(Bug);

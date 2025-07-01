@@ -9,12 +9,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
 import { ApiError, ApiResponse, WorkspaceDto } from '@repo/types';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
   constructor(
     @InjectModel(Workspace.name)
     private readonly workspaceModel: Model<WorkspaceDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
   async createWorkspace(
     workspaceData: WorkspaceDto,
@@ -26,12 +29,27 @@ export class WorkspaceService {
         members: [
           {
             userId: createdBy,
-            role: 'manager', // Assuming the creator is the manager
+            role: 'manager',
             joinedAt: new Date(),
           },
         ],
         createdBy,
       });
+      if (!newWorkspace) {
+        throw new BadRequestException('Failed to create workspace');
+      }
+
+      // bidirectional relationship
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        createdBy,
+        {
+          $push: { workspaces: newWorkspace._id },
+        },
+        { new: true },
+      );
+      if (!updatedUser) {
+        throw new BadRequestException('Failed to update user with workspace');
+      }
 
       return {
         success: true,
@@ -47,11 +65,18 @@ export class WorkspaceService {
   async getOneWorkspace(
     workspaceId: string,
   ): Promise<ApiResponse<Workspace, ApiError>> {
+    // Membership check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const workspace = await this.workspaceModel.findById(workspaceId);
+    const workspace = await this.workspaceModel
+      .findById(workspaceId)
+      .populate({
+        path: 'releases',
+        populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
+      })
+      .exec();
 
     if (!workspace) {
       throw new NotFoundException('workspace not found');
@@ -71,10 +96,14 @@ export class WorkspaceService {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
-    //TODO: check on the memebers
-    const allWorkspaces = await this.workspaceModel.find({
-      'members.userId': userId,
-    });
+    const allWorkspaces = await this.workspaceModel
+      .find({
+        'members.userId': userId,
+      })
+      .populate({
+        path: 'releases',
+        populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
+      });
     if (!allWorkspaces) {
       throw new NotFoundException("the user doesn't has workspaces");
     }
@@ -91,6 +120,7 @@ export class WorkspaceService {
     workspaceId: string,
     data: Partial<WorkspaceDto>,
   ): Promise<ApiResponse<Workspace, ApiError>> {
+    // Membership/role check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }
@@ -128,6 +158,7 @@ export class WorkspaceService {
     workspaceId: string,
     userId: string,
   ): Promise<ApiResponse<null, ApiError>> {
+    // Membership/role check handled by guard
     if (!isValidObjectId(workspaceId)) {
       throw new BadRequestException('Invalid workspace ID');
     }

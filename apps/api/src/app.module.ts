@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthGuard } from './guards/auth.guards';
+import { APP_FILTER } from '@nestjs/core';
+import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 import config from './config/config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
@@ -14,6 +16,9 @@ import { ReleasesModule } from './releases/releases.module';
 import { WorkspaceMembersModule } from './workspace-members/workspace-members.module';
 import { DesignAssetModule } from './design-asset/design-asset.module';
 import { TasksModule } from './tasks/tasks.module';
+import { BugsModule } from './bugs/bugs.module';
+import { HotfixesModule } from './hotfixes/hotfixes.module';
+import { InvitesModule } from './invites/invites.module';
 
 @Module({
   imports: [
@@ -40,16 +45,25 @@ import { TasksModule } from './tasks/tasks.module';
 
       inject: [ConfigService],
     }),
-    AuthModule, // This needs to come before providers that use its exports
+    AuthModule,
     UsersModule,
     WorkspacesModule,
     DesignAssetModule,
     ReleasesModule,
-    WorkspaceMembersModule, // Assuming this is the module for workspace members
-    DesignAssetModule,
+    WorkspaceMembersModule,
     TasksModule,
+    BugsModule,
+    HotfixesModule,
+    InvitesModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthGuard],
+  providers: [
+    AppService,
+    AuthGuard,
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}

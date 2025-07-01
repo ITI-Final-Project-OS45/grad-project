@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsDateString,
-  IsOptional,
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-} from "class-validator";
+import { IsString, IsDateString, IsOptional, IsArray, IsEnum, IsNotEmpty } from "class-validator";
 import { QAStatus, HotfixStatus } from "../../enums/index";
 import { BugSeverity, BugStatus } from "../../enums/bug.enum";
 
@@ -24,11 +17,6 @@ export class CreateReleaseDto {
 
   @IsDateString()
   plannedDate!: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  associatedTasks?: string[];
 }
 
 export class UpdateReleaseDto {
@@ -45,11 +33,6 @@ export class UpdateReleaseDto {
   @IsOptional()
   @IsDateString()
   plannedDate?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  associatedTasks?: string[];
 }
 
 export class DeployReleaseDto {
@@ -140,10 +123,6 @@ export class CreateHotfixDto {
   @IsString()
   @IsNotEmpty()
   description!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  bugId!: string;
 
   @IsOptional()
   @IsArray()
