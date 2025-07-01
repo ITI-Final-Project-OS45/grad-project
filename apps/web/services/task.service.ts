@@ -1,66 +1,90 @@
-import axios from "axios";
+/**
+ * Task Service
+ * ============
+ *
+ * Handles all task-related API operations including:
+ * - Create task
+ * - Update task
+ * - Get tasks by workspace
+ * - Delete task
+ *
+ * This service maps frontend data to the exact API format
+ * expected by the NestJS backend and transforms responses back
+ * to frontend-compatible formats.
+ *
+ * API Endpoints:
+ * - POST /tasks                  - Create task
+ * - PUT /tasks/:id               - Update task
+ * - GET /tasks/workspace/:id     - Get tasks by workspace
+ * - DELETE /tasks/:id            - Delete task
+ *
+ */
+import { apiClient } from "@/lib/axios";
 import {
+  ApiResponse,
+  ApiError,
   Task,
   TaskStatus,
   TaskPriority,
-} from "../../../packages/types/src/dtos/tasks";
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+} from "@repo/types";
 
 export type CreateTaskData = Partial<Task> & {
-  workspaceId: string; // Add workspaceId explicitly
+  workspaceId: string;
 };
 
 export type UpdateTaskData = Partial<CreateTaskData>;
 
 export class TaskService {
-  static async createTask(taskData: CreateTaskData): Promise<Task> {
-    const response = await fetch(`${API_URL}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(taskData),
-    });
+  /**
+   * API endpoint definitions for task operations
+   */
+  private static readonly ENDPOINTS = {
+    TASKS: "/tasks",
+    TASK_BY_ID: (id: string) => `/tasks/${id}`,
+    TASKS_BY_WORKSPACE: (workspaceId: string) =>
+      `/tasks/workspace/${workspaceId}`,
+  } as const;
 
-    if (!response.ok) {
-      throw new Error(`Failed to create task: ${response.statusText}`);
-    }
-
-    return response.json(); // Return the created task from the backend
+  /**
+   * Create a new task
+   * Maps to POST /tasks
+   */
+  static async createTask(
+    taskData: CreateTaskData
+  ): Promise<ApiResponse<Task, ApiError>> {
+    return apiClient.post<Task>(TaskService.ENDPOINTS.TASKS, taskData);
   }
 
-  static async updateTask(id: string, update: UpdateTaskData): Promise<Task> {
-    const response = await fetch(`${API_URL}/tasks/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(update),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update task: ${response.statusText}`);
-    }
-
-    return response.json();
+  /**
+   * Update an existing task
+   * Maps to PUT /tasks/:id
+   */
+  static async updateTask(
+    id: string,
+    update: UpdateTaskData
+  ): Promise<ApiResponse<Task, ApiError>> {
+    return apiClient.put<Task>(TaskService.ENDPOINTS.TASK_BY_ID(id), update);
   }
 
-  static async getTasks(workspaceId: string): Promise<Task[]> {
-    const response = await fetch(`${API_URL}/tasks/workspace/${workspaceId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-    }
-    return response.json();
+  /**
+   * Get all tasks for a workspace
+   * Maps to GET /tasks/workspace/:id
+   */
+  static async getTasks(
+    workspaceId: string
+  ): Promise<ApiResponse<Task[], ApiError>> {
+    return apiClient.get<Task[]>(
+      TaskService.ENDPOINTS.TASKS_BY_WORKSPACE(workspaceId)
+    );
   }
 
-  static async deleteTask(taskId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/tasks/${taskId}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete task: ${response.statusText}`);
-    }
+  /**
+   * Delete a task by ID
+   * Maps to DELETE /tasks/:id
+   */
+  static async deleteTask(
+    taskId: string
+  ): Promise<ApiResponse<null, ApiError>> {
+    return apiClient.delete<null>(TaskService.ENDPOINTS.TASK_BY_ID(taskId));
   }
 }

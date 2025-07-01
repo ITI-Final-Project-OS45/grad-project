@@ -1,3 +1,10 @@
+/**
+ * Tasks Module
+ * ============
+ *
+ * Provides the TasksController and TasksService for task management.
+ *
+ */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Task, TaskSchema } from 'src/schemas/task.schema';

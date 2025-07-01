@@ -30,8 +30,8 @@ export default function TasksPage() {
     Promise.all([
       TaskService.getTasks(workspaceId),
       UserService.getAllUsers(),
-    ]).then(([tasks, users]) => {
-      setTasks(tasks);
+    ]).then(([tasksResponse, users]) => {
+      setTasks(tasksResponse.data ?? []); // Use .data from ApiResponse
       setUsers(users);
       setLoading(false);
     });
@@ -54,7 +54,9 @@ export default function TasksPage() {
       dueDate,
       workspaceId, // Ensure workspaceId is passed here
     });
-    setTasks((prev) => [newTask, ...prev]); // Add the new task at the beginning
+    if (newTask.data) {
+      setTasks((prev) => [newTask.data, ...prev]); // Add the new task at the beginning
+    }
   };
 
   const handleMoveTask = async (taskId: string, newStatus: TaskStatus) => {
