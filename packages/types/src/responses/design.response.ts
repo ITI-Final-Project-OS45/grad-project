@@ -1,13 +1,15 @@
 export interface DesignResponse {
-    _id: string;
-
-    workspaceId: string;
+    
     type: string; // Figma, Mockup
-    assetUrl: string;
-    uploadedBy: string; // users.username    
-    version: string;    
     description: string;
-
+    assetUrl: string;
+    
+    workspaceId: string;
+    
+    uploadedBy: string; // users.username    
+    // version: string;    
+    
+    _id: string;
     createdAt: string;
     updatedAt: string;
 }

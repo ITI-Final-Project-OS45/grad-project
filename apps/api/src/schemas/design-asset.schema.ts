@@ -21,9 +21,6 @@ export class DesignAsset {
     @Prop({type: String})
     uploadedBy!: string; // users.username
     
-    @Prop({type: String, required: true, match: /[0-9]\.[0-9]\.[0-9]/})
-    version!: string;
-    
     @Prop({type: String})
     description!: string;
 }
