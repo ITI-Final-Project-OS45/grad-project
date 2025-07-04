@@ -9,7 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
 import { ApiError, ApiResponse, WorkspaceDto } from '@repo/types';
-import { User, UserDocument } from '../schemas/user.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
