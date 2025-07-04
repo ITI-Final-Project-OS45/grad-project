@@ -1,10 +1,4 @@
-import {
-  ApiError,
-  ApiResponse,
-  CreateReleaseDto,
-  QAStatus,
-  WorkspacePermission,
-} from '@repo/types';
+import { ApiError, ApiResponse, CreateReleaseDto, QAStatus } from '@repo/types';
 import {
   Controller,
   Post,
@@ -17,24 +11,19 @@ import {
   Put,
   Delete,
   Req,
-  SetMetadata,
 } from '@nestjs/common';
 import { ReleaseService } from './release.service';
 import { AuthGuard } from 'src/guards/auth.guards';
 import { Release } from 'src/schemas/release.schema';
 import type { RequestWithUser } from 'src/interfaces/request-user.interface';
-import { WorkspaceAuthorizationGuard } from 'src/guards/workspace-authorization.guard';
 
 @Controller('releases')
 @UseGuards(AuthGuard)
-@UseGuards(WorkspaceAuthorizationGuard)
-@SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
 export class ReleaseController {
   constructor(private readonly releasesService: ReleaseService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async createRelease(
     @Body() createReleaseDto: CreateReleaseDto,
     @Req() req: RequestWithUser,
@@ -64,7 +53,6 @@ export class ReleaseController {
   }
   @Put(':id/deploy')
   @HttpCode(HttpStatus.OK)
-  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async deployRelease(
     @Param('id') id: string,
     @Req() req: RequestWithUser,
@@ -73,7 +61,6 @@ export class ReleaseController {
   }
   @Put(':id/qa')
   @HttpCode(HttpStatus.OK)
-
   async updateQAStatus(
     @Param('id') id: string,
     @Body('qaStatus') qaStatus: QAStatus,
