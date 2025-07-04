@@ -57,8 +57,6 @@ export class InviteController {
 
   // Get all invites for a workspace (manager only)
   @Get('workspace/:workspaceId')
-  @UseGuards(WorkspaceAuthorizationGuard)
-  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async getInvitesForWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.invitesService.getInvitesForWorkspace(workspaceId);
   }

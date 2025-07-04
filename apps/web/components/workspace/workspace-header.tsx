@@ -1,17 +1,28 @@
 "use client";
 
-import { Users, Calendar, Settings, Factory } from "lucide-react";
+import { Users, Calendar, Factory } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useWorkspacePermissions } from "@/lib/permissions";
+import { useUser } from "@/hooks/use-user";
 import type { Workspace } from "@/services/workspace.service";
 
 interface WorkspaceHeaderProps {
   workspace: Workspace;
-  onSettingsClick?: () => void;
   onMembersClick?: () => void;
 }
 
-export function WorkspaceHeader({ workspace, onSettingsClick, onMembersClick }: WorkspaceHeaderProps) {
+export function WorkspaceHeader({ workspace, onMembersClick }: WorkspaceHeaderProps) {
+  const { currentUser } = useUser();
+
+  // Get current user's role in this workspace
+  const currentUserId = currentUser?.data?._id;
+  const currentUserMember = workspace.members?.find((m) => m.userId === currentUserId);
+  const currentUserRole = currentUserMember?.role;
+
+  // Get permissions for this workspace
+  const permissions = useWorkspacePermissions(currentUserId, currentUserRole, workspace.createdBy);
+
   return (
     <header className="border-b bg-card">
       <div className="container mx-auto px-6 py-8 max-w-6xl">
@@ -37,10 +48,18 @@ export function WorkspaceHeader({ workspace, onSettingsClick, onMembersClick }: 
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onMembersClick}>
-              <Users className="w-4 h-4 mr-2" />
-              Members
-            </Button>
+            {/* Only show Members button if user can view members */}
+            {permissions.canViewMembers && (
+              <Button variant="outline" size="sm" onClick={onMembersClick}>
+                <Users className="w-4 h-4 mr-2" />
+                Members
+                {permissions.isManager && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    Manage
+                  </Badge>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>

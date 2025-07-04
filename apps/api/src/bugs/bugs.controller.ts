@@ -10,14 +10,24 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  SetMetadata,
 } from '@nestjs/common';
 import { BugsService } from './bugs.service';
-import { CreateBugDto, UpdateBugDto, ApiError, ApiResponse } from '@repo/types';
+import {
+  CreateBugDto,
+  UpdateBugDto,
+  ApiError,
+  ApiResponse,
+  WorkspacePermission,
+} from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
+import { WorkspaceAuthorizationGuard } from '../guards/workspace-authorization.guard';
 import type { RequestWithUser } from '../interfaces/request-user.interface';
 import { Bug } from '../schemas/bug.schema';
 
 @UseGuards(AuthGuard)
+@UseGuards(WorkspaceAuthorizationGuard)
+@SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
 @Controller('bugs')
 export class BugsController {
   constructor(private readonly bugsService: BugsService) {}
@@ -53,6 +63,7 @@ export class BugsController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
+  @SetMetadata('workspacePermission', WorkspacePermission.MEMBER) // Will be validated in service
   async update(
     @Param('id') id: string,
     @Body() updateBugDto: UpdateBugDto,
@@ -63,6 +74,7 @@ export class BugsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @SetMetadata('workspacePermission', WorkspacePermission.MEMBER) // Will be validated in service
   async delete(
     @Param('id') id: string,
     @Req() req: RequestWithUser,
