@@ -9,7 +9,7 @@ import {
   QAStatus,
   UserRole,
 } from '@repo/types';
-import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
+import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import {
   WorkspaceNotFoundException,
   ReleaseNotFoundException,
