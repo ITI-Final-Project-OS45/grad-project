@@ -3,8 +3,8 @@ import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Workspace, WorkspaceSchema } from '../schemas/workspace.schema';
-import { User, UserSchema } from 'src/schemas/user.schema';
-import { Release, ReleaseSchema } from 'src/schemas/release.schema';
+import { User, UserSchema } from '../schemas/user.schema';
+import { Release, ReleaseSchema } from '../schemas/release.schema';
 
 @Module({
   imports: [

@@ -10,7 +10,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  SetMetadata,
 } from '@nestjs/common';
 import { HotfixesService } from './hotfixes.service';
 import {
@@ -18,23 +17,18 @@ import {
   UpdateHotfixDto,
   ApiError,
   ApiResponse,
-  WorkspacePermission,
 } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
 import type { RequestWithUser } from '../interfaces/request-user.interface';
 import { Hotfix } from '../schemas/hotfix.schema';
-import { WorkspaceAuthorizationGuard } from 'src/guards/workspace-authorization.guard';
 
 @UseGuards(AuthGuard)
-@UseGuards(WorkspaceAuthorizationGuard)
-@SetMetadata('workspacePermission', WorkspacePermission.MEMBER)
 @Controller('hotfixes')
 export class HotfixesController {
   constructor(private readonly hotfixesService: HotfixesService) {}
 
   @Post('release/:releaseId')
   @HttpCode(HttpStatus.CREATED)
-  @SetMetadata('workspacePermission', WorkspacePermission.MANAGER)
   async create(
     @Param('releaseId') releaseId: string,
     @Body() createHotfixDto: CreateHotfixDto,
@@ -71,7 +65,6 @@ export class HotfixesController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @SetMetadata('workspacePermission', WorkspacePermission.MEMBER) // Will be validated in service
   async update(
     @Param('id') id: string,
     @Body() updateHotfixDto: UpdateHotfixDto,
@@ -82,7 +75,6 @@ export class HotfixesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @SetMetadata('workspacePermission', WorkspacePermission.MEMBER) // Will be validated in service
   async delete(
     @Param('id') id: string,
     @Req() req: RequestWithUser,

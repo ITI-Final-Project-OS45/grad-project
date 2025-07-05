@@ -33,7 +33,7 @@ export class DesignAssetService {
       const {secure_url} = await this.cloudinaryService.uploadFile(file);
       url = secure_url;
     }else{
-      url = 'null' //todo add embed link
+      url = designAssetDto?.assetUrl || ''; //todo add embed link
     }
       
     const createDesignAssetDto: CreateDesignAssetDto  = {...designAssetDto, assetUrl:url, uploadedBy:user!.username};
@@ -50,25 +50,50 @@ export class DesignAssetService {
   }
 
   async findAll(workspaceId: string) {
-    return await this.DesignAssetModel.find({workspaceId: workspaceId});
+    const data = await this.DesignAssetModel.find({workspaceId: workspaceId});
+    return {
+      success: true,
+      status: HttpStatus.FOUND,
+      message: 'data gotten successfully',
+      data: data,
+    }
   }
 
   async findOne(id: string) {
-    return await this.DesignAssetModel.findById(id);
+    const data = await this.DesignAssetModel.findById(id);
+    return {
+      success: true,
+      status: HttpStatus.FOUND,
+      message: 'data gotten successfully',
+      data: data,
+    }
   }
 
   async update(id: string, updateDesignAsset: UpdateDesignAssetDto, file: Express.Multer.File) {
     console.log(updateDesignAsset);
-    
+    let data: DesignAssetDocument | null
     if(file){
       const {secure_url:assetUrl} = await this.cloudinaryService.uploadFile(file);
-      return await this.DesignAssetModel.findByIdAndUpdate(id, { $set: {...updateDesignAsset, assetUrl} }, { new: true } );
+      data = await this.DesignAssetModel.findByIdAndUpdate(id, { $set: {...updateDesignAsset, assetUrl} }, { new: true } );
     }else{
-      return await this.DesignAssetModel.findByIdAndUpdate(id, { $set: updateDesignAsset }, { new: true } );
+      data = await this.DesignAssetModel.findByIdAndUpdate(id, { $set: updateDesignAsset }, { new: true } );
+    }
+
+    return {
+      success: true,
+      status: HttpStatus.FOUND,
+      message: 'data gotten successfully',
+      data: data,
     }
   }
 
   async remove(id: string) {
-    return await this.DesignAssetModel.findByIdAndDelete(id);
+    const data = await this.DesignAssetModel.findByIdAndDelete(id);
+    return {
+      success: true,
+      status: HttpStatus.FOUND,
+      message: 'data gotten successfully',
+      data: data,
+    }
   }
 }

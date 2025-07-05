@@ -6,31 +6,24 @@ export class DesignAssetDto {
 
     @IsString()
     type!: string; // Figma, Mockup
-
-    
-    @IsString()
-    version!: string;
     
     @IsString()
     description!: string;
+
+    @IsUrl()
+    @IsOptional()
+    assetUrl?: string;
 }
 
 export class CreateDesignAssetDto extends DesignAssetDto {
     @IsString()
     uploadedBy!: string;
-
-    @IsUrl()
-    assetUrl!: string;
 }
 
 export class UpdateDesignAssetDto  {
     @IsString()
     @IsOptional()
     type?: string; // Figma, Mockup
-    
-    @IsOptional()
-    @IsString()
-    version!: string;
     
     @IsOptional()
     @IsString()

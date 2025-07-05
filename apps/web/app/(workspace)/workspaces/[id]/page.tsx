@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Rocket } from "lucide-react";
+import { FileText, Palette, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspaceById } from "@/hooks/use-workspace";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
@@ -38,16 +38,16 @@ const featureCards: FeatureCard[] = [
   //   features: ["Kanban Board", "Task Assignment", "Due Dates", "Priority Management"],
   // },
   // TODO: Uncomment when designs feature is ready
-  //{
-  //   title: "Design Assets",
-  //   description: "Store and collaborate on design files with version control",
-  //   icon: Palette,
-  //   href: "/designs",
-  //   color: "text-purple-600 dark:text-purple-400",
-  //   bgColor: "bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-950/30 dark:to-pink-950/30",
-  //   borderColor: "border-purple-200/50 dark:border-purple-800/50",
-  //   features: ["File Upload", "Version History", "Team Sharing", "Asset Organization"],
-  // },
+  {
+    title: "Design Assets",
+    description: "Store and collaborate on design files with version control",
+    icon: Palette,
+    href: "/designs",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-950/30 dark:to-pink-950/30",
+    borderColor: "border-purple-200/50 dark:border-purple-800/50",
+    features: ["File Upload", "Version History", "Team Sharing", "Asset Organization"],
+  },
   {
     title: "Release Management",
     description: "Plan and coordinate product releases with deployment tracking",
