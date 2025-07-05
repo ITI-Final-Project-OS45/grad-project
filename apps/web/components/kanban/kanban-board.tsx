@@ -1,22 +1,33 @@
-import React, { useState, useRef } from "react";
-import {
-  KanbanColumn,
-  Task,
-  TaskStatus,
-} from "../../../../packages/types/src/dtos/tasks";
-import { User } from "@/services/user.service";
-import KanbanTaskCard from "./kanban-task-card";
+import React, { useState } from "react";
+import { KanbanColumn, Task, TaskStatus } from "@repo/types";
 import AddTaskModal from "./task-modal";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { TaskService } from "@/services/task.service";
-import { TaskPriority } from "../../../../packages/types/src/dtos/tasks/kanban";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  TaskListView,
+  KanbanUser as TaskListKanbanUser,
+} from "./task-list-view";
+import EditTaskModal from "./edit-task-modal";
+import { TaskDetailModal } from "./task-detail-modal";
+import { KanbanColumnComponent } from "./kanban-column";
+import { useKanbanTaskGroups } from "@/hooks/use-kanban-task-groups";
+import { useModalState } from "@/hooks/use-modal-state";
+import { useDragAndDrop } from "@/hooks/use-drag-and-drop";
+
+// Change User import to a local type for Kanban users (from workspace members)
+type KanbanUser = {
+  _id: string;
+  username: string;
+  displayName: string;
+  email: string;
+};
 
 type KanbanBoardProps = {
   columns: KanbanColumn[];
   tasks: Task[];
-  users: User[];
+  users: KanbanUser[];
   onAddTask: (...args: any[]) => void;
   onMoveTask: (taskId: string, newStatus: TaskStatus) => void;
   workspaceId: string;
@@ -32,20 +43,29 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onMoveTask,
   workspaceId,
   onTaskUpdated,
-  onTaskRemoved, // Destructure the new prop
+  onTaskRemoved,
 }) => {
-  const [modalColumn, setModalColumn] = useState<TaskStatus | null>(null); // State for modal column
-  const [isAddTaskModalOpen, setAddTaskModalOpen] = useState(false); // State for Add Task Modal
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
 
-  const divRef = useRef<HTMLDivElement | null>(null); // Define divRef
+  // Use custom hooks for better separation of concerns
+  const groupedKanbanTasks = useKanbanTaskGroups(tasks);
+  const { moveTask } = useDragAndDrop({ tasks, onTaskUpdated });
+  const {
+    activeModal,
+    editTask,
+    previewTask,
+    addModalStatus,
+    modalColumn,
+    openEditModal,
+    openPreviewModal,
+    openAddModal,
+    setModalColumn,
+    closeEditModal,
+    closePreviewModal,
+    closeAddModal,
+  } = useModalState();
 
-  // Update handleAddTask to call onAddTask directly
-  const handleAddTask = onAddTask;
-
-  // Update handleMoveTask to call onMoveTask directly
-  const handleMoveTask = onMoveTask;
-
-  // Update handleTaskUpdated to call onTaskUpdated directly
+  // Task event handlers
   const handleTaskUpdated = (updatedTask: Task) => {
     if (onTaskUpdated) onTaskUpdated(updatedTask);
   };
@@ -54,92 +74,119 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (onTaskRemoved) onTaskRemoved(taskId);
   };
 
-  const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
-    const [, dragRef] = useDrag({
-      type: "TASK",
-      item: { id: task._id },
-    });
-
-    const combinedDragRef = (node: HTMLDivElement | null) => {
-      dragRef(node);
-      divRef.current = node;
-    };
-
-    return (
-      <div
-        ref={combinedDragRef}
-        className="cursor-grab bg-white shadow rounded-lg p-4 mb-3 hover:shadow-lg transition-shadow duration-200"
-      >
-        <KanbanTaskCard
-          task={task}
-          users={users}
-          onTaskUpdated={handleTaskUpdated}
-          onTaskRemoved={handleTaskRemoved}
-        />
-      </div>
-    );
-  };
-
-  const Column: React.FC<{ column: KanbanColumn }> = ({ column }) => {
-    const [, dropRef] = useDrop({
-      accept: "TASK",
-      drop: (item: { id: string }) => {
-        handleMoveTask(item.id, column.status);
-      },
-    });
-
-    const combinedRef = (node: HTMLDivElement | null) => {
-      dropRef(node);
-      divRef.current = node;
-    };
-
-    return (
-      <div
-        ref={combinedRef}
-        className="p-6 mb-4 transition-transform duration-200"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-foreground">{column.title}</h2>
-          <button
-            className="text-foreground bg-primary px-4 py-2 rounded hover:bg-primary/80 flex items-center gap-1"
-            onClick={() => setAddTaskModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex flex-col gap-4">
-          {tasks
-            .filter((task) => task.status === column.status)
-            .map((task) => (
-              <KanbanTaskCard
-                key={task._id}
-                task={task}
-                users={users}
-                onTaskUpdated={handleTaskUpdated}
-                onTaskRemoved={handleTaskRemoved}
-              />
-            ))}
-        </div>
-        <AddTaskModal
-          defaultStatus={column.status}
-          open={isAddTaskModalOpen}
-          onClose={() => setAddTaskModalOpen(false)}
-          onAdd={handleAddTask}
-          users={users}
-        />
-      </div>
-    );
+  const handleAddTask = (task: any) => {
+    if (onAddTask) {
+      const position = addModalStatus
+        ? groupedKanbanTasks[addModalStatus].length
+        : 0;
+      onAddTask({
+        ...task,
+        status: addModalStatus,
+        workspaceId,
+        position,
+      });
+    }
+    closeAddModal();
   };
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="overflow-x-auto w-full min-w-0">
-        <div className="flex flex-nowrap min-w-max gap-4 justify-center bg-background p-6">
-          {columns.map((col) => (
-            <Column key={col.status} column={col} />
-          ))}
-        </div>
+      <div className="flex items-center justify-end mb-4 gap-2">
+        <Button
+          variant={viewMode === "kanban" ? "default" : "outline"}
+          onClick={() => setViewMode("kanban")}
+        >
+          Kanban View
+        </Button>
+        <Button
+          variant={viewMode === "list" ? "default" : "outline"}
+          onClick={() => setViewMode("list")}
+        >
+          List View
+        </Button>
       </div>
+
+      {viewMode === "kanban" ? (
+        <div className="overflow-x-auto w-full min-w-0">
+          <div className="flex flex-col sm:flex-row flex-nowrap min-w-0 gap-4 justify-center bg-background p-2 sm:p-6">
+            {columns.map((col) => (
+              <KanbanColumnComponent
+                key={col.status}
+                column={col}
+                tasks={groupedKanbanTasks[col.status]}
+                users={users}
+                modalColumn={modalColumn}
+                setModalColumn={setModalColumn}
+                onAddTask={onAddTask}
+                onMoveTask={onMoveTask}
+                onTaskUpdated={handleTaskUpdated}
+                onTaskRemoved={handleTaskRemoved}
+                onPreview={openPreviewModal}
+                moveTask={moveTask}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <TaskListView
+            tasks={tasks}
+            users={users as TaskListKanbanUser[]}
+            onEdit={openEditModal}
+            onPreview={openPreviewModal}
+            onDelete={(task) => {
+              if (onTaskRemoved) onTaskRemoved(task._id);
+            }}
+            renderSectionAction={(status) => (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => openAddModal(status)}
+                aria-label={`Add to ${status}`}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            )}
+          />
+
+          {/* Modals */}
+          {editTask && (
+            <EditTaskModal
+              task={editTask}
+              users={users}
+              open={!!editTask}
+              onClose={closeEditModal}
+              onUpdate={(updatedTask) => {
+                if (onTaskUpdated) {
+                  onTaskUpdated({ ...editTask, ...updatedTask });
+                }
+                closeEditModal();
+              }}
+            />
+          )}
+
+          <TaskDetailModal
+            task={previewTask}
+            users={users}
+            open={!!previewTask}
+            onClose={closePreviewModal}
+          />
+
+          {addModalStatus && (
+            <AddTaskModal
+              defaultStatus={addModalStatus}
+              open={!!addModalStatus}
+              onClose={closeAddModal}
+              onAdd={handleAddTask}
+              users={users}
+              position={
+                addModalStatus ? groupedKanbanTasks[addModalStatus].length : 0
+              }
+            />
+          )}
+        </>
+      )}
     </DndProvider>
   );
 };

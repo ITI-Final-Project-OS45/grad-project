@@ -23,6 +23,9 @@ export class Task extends Document {
 
   @Prop({ enum: ['low', 'medium', 'high'], default: 'medium' })
   priority?: 'low' | 'medium' | 'high';
+
+  @Prop({ required: true })
+  position!: number;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

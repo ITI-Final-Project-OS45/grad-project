@@ -34,4 +34,7 @@ export class CreateTaskDto {
   @IsIn(["low", "medium", "high"])
   @IsOptional()
   priority?: "low" | "medium" | "high"; // Add priority property
+
+  @IsNotEmpty()
+  position!: number;
 }
