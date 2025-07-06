@@ -1,11 +1,12 @@
 import { IsMongoId, IsOptional, IsString, IsUrl } from "class-validator";
+import { DesignAssetType } from "../../enums";
 
 export class DesignAssetDto {
     @IsMongoId()
     workspaceId!: string;
 
     @IsString()
-    type!: string; // Figma, Mockup
+    type!: DesignAssetType; // Figma, Mockup
     
     @IsString()
     description!: string;
@@ -13,6 +14,9 @@ export class DesignAssetDto {
     @IsUrl()
     @IsOptional()
     assetUrl?: string;
+
+    @IsOptional()
+    file?: File; // This will be used for file uploads, e.g., mockup images
 }
 
 export class CreateDesignAssetDto extends DesignAssetDto {
@@ -23,7 +27,7 @@ export class CreateDesignAssetDto extends DesignAssetDto {
 export class UpdateDesignAssetDto  {
     @IsString()
     @IsOptional()
-    type?: string; // Figma, Mockup
+    type?: DesignAssetType; // Figma, Mockup
     
     @IsOptional()
     @IsString()
