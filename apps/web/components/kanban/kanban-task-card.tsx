@@ -1,17 +1,28 @@
 import React, { useState, useRef } from "react";
-import { Task } from "../../../../packages/types/src/dtos/tasks";
-import { User } from "@/services/user.service";
+import { Task } from "@repo/types";
 import { useDrag } from "react-dnd";
 import EditTaskModal from "./edit-task-modal";
 import { TaskService } from "@/services/task.service";
 import { motion } from "framer-motion";
-import { Edit, Trash2 } from "lucide-react"; // Import icons from lucide-react
+import { Edit, Trash2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RichTextPreview } from "./rich-text-preview";
+
+type KanbanUser = {
+  _id: string;
+  username: string;
+  displayName: string;
+  email: string;
+};
 
 type KanbanTaskCardProps = {
   task: Task;
-  users: User[];
+  users: KanbanUser[];
   onTaskUpdated?: (updatedTask: Task) => void;
-  onTaskRemoved?: (taskId: string) => void; // Add a prop type for the remove callback
+  onTaskRemoved?: (taskId: string) => void;
+  onPreview?: () => void;
 };
 
 const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
@@ -19,10 +30,11 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
   users,
   onTaskUpdated,
   onTaskRemoved,
+  onPreview,
 }) => {
   const assignedUsers = users.filter((user) =>
     task.assignedTo.includes(user._id)
-  ); // Get all assigned users
+  );
 
   const [{ isDragging }, dragRef] = useDrag({
     type: "TASK",
@@ -33,21 +45,29 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
   });
 
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleUpdate = async (updatedTask: Partial<Task>) => {
     // Call backend API to update the task
     const updated = await TaskService.updateTask(task._id, updatedTask);
-
     // Update the UI by calling a parent-provided function
-    if (onTaskUpdated) {
-      onTaskUpdated(updated); // Pass the updated task to the parent
+    if (onTaskUpdated && updated.data) {
+      onTaskUpdated(updated.data); // Pass the updated task data to the parent
     }
   };
 
   const handleRemove = async () => {
-    await TaskService.deleteTask(task._id); // Call backend API to delete the task
-    if (onTaskRemoved) {
-      onTaskRemoved(task._id); // Notify the parent to remove the task from the UI
+    if (deleting) return; // Prevent double delete
+    setDeleting(true);
+    try {
+      await TaskService.deleteTask(task._id);
+      if (onTaskRemoved) {
+        onTaskRemoved(task._id); // Notify the parent to remove the task from the UI
+      }
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -61,87 +81,103 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      layout
-    >
-      <div
-        ref={combinedRef} // Use combinedRef to resolve TypeScript error
-        className="group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-300 cursor-grab ring-1 ring-border hover:ring-primary rounded-lg p-6 mb-4 w-[320px] h-[220px] flex flex-col justify-between shrink-0"
+    <>
+      {/* Card is always rendered, parent removes it after onTaskRemoved */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        layout
+        className="h-full"
       >
-        <div className="relative flex flex-col gap-4 flex-1 min-h-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors duration-200 truncate max-w-[170px]">
-              {task.title}
-            </h3>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
-                task.priority === "high"
-                  ? "bg-red-500 text-white"
-                  : task.priority === "medium"
-                    ? "bg-yellow-400 text-black"
-                    : "bg-green-400 text-black"
-              }`}
+        <Card
+          ref={combinedRef}
+          className="group relative overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-grab ring-1 ring-border hover:ring-primary rounded-xl p-4 sm:p-6 mb-4 w-full h-full flex flex-col justify-between shrink-0 bg-card"
+          onClick={() => onPreview && onPreview()}
+        >
+          <div className="relative flex flex-col gap-4 flex-1 min-h-0">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors duration-200 truncate max-w-[170px]">
+                {task.title}
+              </h3>
+              <Badge
+                variant={
+                  task.priority === "high"
+                    ? "destructive"
+                    : task.priority === "medium"
+                      ? "secondary"
+                      : "outline"
+                }
+                className="px-3 py-1 rounded-full text-xs font-medium"
+              >
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </Badge>
+            </div>
+            {task.dueDate && (
+              <p className="text-xs text-muted-foreground truncate">
+                Due: {new Date(task.dueDate).toLocaleDateString()}
+              </p>
+            )}
+            {task.description && (
+              <div className="text-sm text-muted-foreground line-clamp-3 break-words max-h-[60px] overflow-hidden rich-text-preview">
+                <RichTextPreview content={task.description} />
+              </div>
+            )}
+            <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+              <span className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium">Assigned:</span>
+                {assignedUsers.length > 0 ? (
+                  assignedUsers.map((user) => (
+                    <Badge
+                      key={user._id}
+                      variant="outline"
+                      className="truncate max-w-[80px]"
+                      title={user.username}
+                    >
+                      {user.username}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-destructive">Unassigned</span>
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditModalOpen(true);
+              }}
+              className="whitespace-nowrap"
             >
-              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-            </span>
+              <Edit className="h-4 w-4" /> Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleting}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent Card onClick from firing
+                handleRemove();
+              }}
+              className="whitespace-nowrap"
+            >
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
           </div>
-          {task.dueDate && (
-            <p className="text-xs text-muted-foreground truncate">
-              Due: {new Date(task.dueDate).toLocaleDateString()}
-            </p>
-          )}
-          {task.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 break-words max-h-[40px] overflow-hidden">
-              {task.description}
-            </p>
-          )}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <span className="font-medium">Assigned:</span>
-              {assignedUsers.length > 0 ? (
-                assignedUsers.map((user) => (
-                  <span
-                    key={user._id}
-                    className="text-foreground bg-muted px-2 py-1 rounded-full text-xs truncate max-w-[80px] overflow-hidden"
-                    title={user.username}
-                  >
-                    {user.username}
-                  </span>
-                ))
-              ) : (
-                <span className="text-destructive">Unassigned</span>
-              )}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 mt-4">
-          <button
-            className="text-xs text-white bg-primary px-2 py-1 rounded hover:bg-primary/80 transition-colors flex items-center gap-1"
-            onClick={() => setEditModalOpen(true)}
-          >
-            <Edit className="h-4 w-4" />
-            Edit
-          </button>
-          <button
-            className="text-xs text-white bg-destructive px-2 py-1 rounded hover:bg-destructive/80 transition-colors flex items-center gap-1"
-            onClick={handleRemove}
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </button>
-        </div>
-        <EditTaskModal
-          task={task}
-          users={users}
-          open={isEditModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          onUpdate={handleUpdate}
-        />
-      </div>
-    </motion.div>
+          <EditTaskModal
+            task={task}
+            users={users}
+            open={isEditModalOpen}
+            onClose={() => setEditModalOpen(false)}
+            onUpdate={handleUpdate}
+          />
+        </Card>
+      </motion.div>
+    </>
   );
 };
 

@@ -14,4 +14,5 @@ export type Task = {
   status: TaskStatus;
   priority: TaskPriority; // Add priority property
   dueDate?: string;
+  position: number; // Add position for ordering
 };

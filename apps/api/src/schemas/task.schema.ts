@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Task extends Document {
@@ -7,22 +7,26 @@ export class Task extends Document {
   title!: string;
 
   @Prop({ required: true, enum: ['todo', 'in-progress', 'done'] })
-  status!: string;
+  status!: 'todo' | 'in-progress' | 'done';
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], required: true })
-  assignedTo!: Types.ObjectId[];
+  @Prop({ type: [String], required: true })
+  assignedTo!: string[];
 
   @Prop()
   description?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Workspace', required: true })
-  workspaceId!: Types.ObjectId;
+  @Prop({ required: true })
+  workspaceId!: string;
 
   @Prop()
-  dueDate?: Date;
+  dueDate?: string;
 
   @Prop({ enum: ['low', 'medium', 'high'], default: 'medium' })
-  priority?: string;
+  priority?: 'low' | 'medium' | 'high';
+
+  @Prop({ required: true })
+  position!: number;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
+export type TaskDocument = Task & Document;

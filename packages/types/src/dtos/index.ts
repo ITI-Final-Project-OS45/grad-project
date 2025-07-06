@@ -4,4 +4,5 @@ export * from "./workspaces";
 export * from "./releases";
 export * from "./workspace-members";
 export * from "./design-assets";
+export * from "./tasks";
 export * from "./invites";

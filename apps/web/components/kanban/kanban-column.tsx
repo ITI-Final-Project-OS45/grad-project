@@ -1,35 +1,52 @@
-import React, { useState } from "react";
-import { User } from "@/services/user.service";
-import {
-  KanbanColumn,
-  Task,
-  TaskStatus,
-} from "../../../../packages/types/src/dtos/tasks";
-import KanbanTaskCard from "./kanban-task-card";
+import React, { useRef } from "react";
+import { useDrop } from "react-dnd";
+import { KanbanColumn, Task, TaskStatus } from "@repo/types";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 import AddTaskModal from "./task-modal";
-import { useDrag, useDrop } from "react-dnd";
+import { KanbanTaskCardWithDrag } from "./kanban-task-card-with-drag";
 
-type KanbanColumnProps = {
-  column: KanbanColumn;
-  tasks: Task[];
-  users: User[];
-  onAddTask: (task: {
-    title: string;
-    description?: string;
-    assignedTo: string;
-    status: TaskStatus;
-  }) => void;
-  onMoveTask: (taskId: string, newStatus: TaskStatus) => void;
+type KanbanUser = {
+  _id: string;
+  username: string;
+  displayName: string;
+  email: string;
 };
 
-const KanbanColumnComponent: React.FC<KanbanColumnProps> = ({
+type KanbanColumnComponentProps = {
+  column: KanbanColumn;
+  tasks: Task[];
+  users: KanbanUser[];
+  modalColumn: TaskStatus | null;
+  setModalColumn: (status: TaskStatus | null) => void;
+  onAddTask: (...args: any[]) => void;
+  onMoveTask: (taskId: string, newStatus: TaskStatus) => void;
+  onTaskUpdated?: (updatedTask: Task) => void;
+  onTaskRemoved?: (taskId: string) => void;
+  onPreview?: (task: Task) => void;
+  moveTask: (
+    dragIndex: number,
+    hoverIndex: number,
+    columnStatus: TaskStatus
+  ) => void;
+};
+
+export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   column,
   tasks,
   users,
+  modalColumn,
+  setModalColumn,
   onAddTask,
   onMoveTask,
+  onTaskUpdated,
+  onTaskRemoved,
+  onPreview,
+  moveTask,
 }) => {
-  const [modalOpen, setModalOpen] = useState(false);
+  const divRef = useRef<HTMLDivElement | null>(null);
 
   const [, dropRef] = useDrop({
     accept: "TASK",
@@ -38,47 +55,62 @@ const KanbanColumnComponent: React.FC<KanbanColumnProps> = ({
     },
   });
 
-  const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
-    const [, dragRef] = useDrag({
-      type: "TASK",
-      item: { id: task._id },
-    });
-
-    return (
-      <div ref={dragRef}>
-        <KanbanTaskCard task={task} users={users} />
-      </div>
-    );
+  const combinedRef = (node: HTMLDivElement | null) => {
+    dropRef(node);
+    divRef.current = node;
   };
 
+  const columnTasks = tasks
+    .filter((t) => t.status === column.status)
+    .sort((a, b) => a.position - b.position);
+
   return (
-    <div
-      ref={dropRef}
-      className="flex flex-col bg-gray-100 rounded-lg shadow-md p-4 w-full sm:w-[350px]"
+    <Card
+      ref={combinedRef}
+      className="p-4 sm:p-6 mb-4 w-full sm:w-[350px] flex flex-col gap-4 bg-background border border-border shadow-md rounded-2xl min-h-[400px]"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold">{column.title}</h3>
-        <button
-          className="bg-blue-500 text-white rounded px-3 py-1 text-sm hover:bg-blue-600 transition-colors"
-          onClick={() => setModalOpen(true)}
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <span className="text-lg font-bold text-foreground truncate">
+          {column.title}
+        </span>
+        <Dialog
+          open={modalColumn === column.status}
+          onOpenChange={(open) => setModalColumn(open ? column.status : null)}
         >
-          + Add
-        </button>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="default"
+              className="gap-1 whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4" /> Add
+            </Button>
+          </DialogTrigger>
+          <AddTaskModal
+            defaultStatus={column.status}
+            open={modalColumn === column.status}
+            onClose={() => setModalColumn(null)}
+            onAdd={onAddTask}
+            users={users}
+            position={columnTasks.length}
+          />
+        </Dialog>
       </div>
-      <div className="bg-muted/30 rounded-lg min-h-[200px] p-3">
-        {tasks.map((task) => (
-          <TaskCard key={task._id} task={task} />
+      <div className="flex flex-col gap-4 flex-1 min-h-[100px]">
+        {columnTasks.map((task, idx) => (
+          <KanbanTaskCardWithDrag
+            key={task._id}
+            task={task}
+            index={idx}
+            columnStatus={column.status}
+            users={users}
+            onTaskUpdated={onTaskUpdated}
+            onTaskRemoved={onTaskRemoved}
+            onPreview={() => onPreview && onPreview(task)}
+            moveTask={moveTask}
+          />
         ))}
       </div>
-      <AddTaskModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onAdd={onAddTask}
-        users={users}
-        defaultStatus={column.status}
-      />
-    </div>
+    </Card>
   );
 };
-
-export default KanbanColumnComponent;

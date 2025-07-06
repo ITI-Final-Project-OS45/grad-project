@@ -1,9 +1,21 @@
 import React, { useState } from "react";
-import { User } from "@/services/user.service";
+import { TaskStatus, TaskPriority } from "@repo/types";
 import {
-  TaskStatus,
-  TaskPriority,
-} from "../../../../packages/types/src/dtos/tasks";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+
+type KanbanUser = {
+  _id: string;
+  username: string;
+  displayName: string;
+  email: string;
+};
 
 type AddTaskModalProps = {
   open: boolean;
@@ -15,9 +27,11 @@ type AddTaskModalProps = {
     status: TaskStatus;
     dueDate?: string;
     priority?: TaskPriority;
+    position?: number; // <-- allow position as a prop
   }) => void;
-  users: User[];
+  users: KanbanUser[];
   defaultStatus: TaskStatus;
+  position?: number; // <-- allow position as a prop
 };
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({
@@ -26,6 +40,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   onAdd,
   users,
   defaultStatus,
+  position, // <-- accept position
 }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -34,6 +49,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [error, setError] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +70,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       status,
       dueDate,
       priority,
+      ...(typeof position === "number" ? { position } : {}), // <-- always include position if provided
     });
     setTitle("");
     setDescription("");
@@ -67,80 +84,118 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
-      <form
-        className="bg-card p-6 rounded shadow-md w-full max-w-md"
-        onSubmit={handleSubmit}
-      >
-        <h2 className="text-lg font-bold text-foreground mb-4">Add Task</h2>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md w-full p-4 sm:p-6 rounded-2xl overflow-y-auto max-h-[90vh]">
+        <DialogTitle className="mb-2 text-xl font-bold">Add Task</DialogTitle>
         {error && <div className="text-destructive mb-2">{error}</div>}
-        <input
-          className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <textarea
-          className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <select
-          multiple
-          className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded"
-          value={assignedTo}
-          onChange={(e) =>
-            setAssignedTo(
-              Array.from(e.target.selectedOptions, (option) => option.value)
-            )
-          }
-        >
-          {users.map((user) => (
-            <option key={user._id} value={user._id} className="text-foreground">
-              {user.username}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          required
-        />
-        <select
-          className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded"
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as TaskPriority)}
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="bg-muted text-muted-foreground px-4 py-2 rounded hover:bg-muted/80"
-            onClick={onClose}
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <Input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="rounded-lg"
+          />
+          <Textarea
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="rounded-lg min-h-[60px] break-words whitespace-pre-line resize-y max-h-40 overflow-y-auto"
+            style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
+          />
+          <label className="text-sm font-medium">Assign to</label>
+          <Input
+            placeholder="Search members..."
+            value={memberSearch}
+            onChange={(e) => setMemberSearch(e.target.value)}
+            className="rounded-lg mb-2"
+          />
+          <div
+            className={`flex flex-col gap-2 ${
+              users.filter((user) =>
+                (user.displayName || user.username)
+                  .toLowerCase()
+                  .includes(memberSearch.toLowerCase())
+              ).length > 10
+                ? "max-h-40 overflow-y-auto"
+                : ""
+            } rounded-lg border border-input bg-input p-2 mb-2`}
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={`px-4 py-2 rounded ${
-              title && dueDate
-                ? "bg-primary text-primary-foreground hover:bg-primary/80"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-            }`}
-            disabled={!title || !dueDate} // Disable if title or dueDate is missing
+            {users
+              .filter((user) =>
+                (user.displayName || user.username)
+                  .toLowerCase()
+                  .includes(memberSearch.toLowerCase())
+              )
+              .map((user) => (
+                <label
+                  key={user._id}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={assignedTo.includes(user._id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setAssignedTo([...assignedTo, user._id]);
+                      } else {
+                        setAssignedTo(
+                          assignedTo.filter((id) => id !== user._id)
+                        );
+                      }
+                    }}
+                    className="accent-primary rounded"
+                  />
+                  <span className="text-foreground text-sm">
+                    {user.displayName || user.username}
+                  </span>
+                </label>
+              ))}
+            {users.filter((user) =>
+              (user.displayName || user.username)
+                .toLowerCase()
+                .includes(memberSearch.toLowerCase())
+            ).length === 0 && (
+              <span className="text-muted-foreground text-xs px-2">
+                No members found.
+              </span>
+            )}
+          </div>
+          <Input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            required
+            className="rounded-lg"
+          />
+          <label className="text-sm font-medium">Priority</label>
+          <select
+            className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded-lg"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as TaskPriority)}
           >
-            Add
-          </button>
-        </div>
-      </form>
-    </div>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <div className="flex justify-end gap-2 mt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary" className="rounded-lg">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={!title || !dueDate}
+              className="rounded-lg"
+            >
+              Add
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
