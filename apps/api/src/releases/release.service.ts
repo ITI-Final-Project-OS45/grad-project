@@ -46,6 +46,11 @@ export class ReleaseService {
     if (!userMember) {
       throw new UserNotMemberException();
     }
+    if (userMember.role !== UserRole.Manager)
+      throw new InsufficientPermissionsException(
+        'create release',
+        UserRole.Manager,
+      );
 
     const newRelease = new this.releaseModel({
       ...createReleaseDto,
