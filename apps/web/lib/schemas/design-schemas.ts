@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Create Workspace Schema
 export const ZDesignsSchema = z.object({
-    type:        z.enum(["figma", "mockup"], { required_error: "Workspace type is required" }),
+    type:        z.enum(["figma", "mockup"], { required_error: "Design type is required" }),
     description: z.string().max(500, "Description must be less than 500 characters"),
     assetUrl:    z.string().max(500, "URL must be less than 500 characters").optional(),
     file:        z.instanceof(FileList).optional(),

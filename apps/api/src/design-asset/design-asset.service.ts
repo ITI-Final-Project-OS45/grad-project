@@ -119,10 +119,20 @@ export class DesignAssetService {
   }
 
   async remove(id: string, userId: string) {
-    const data = await this.DesignAssetModel.findByIdAndDelete(id);
-
     const user = await this.userModel.findById(userId).exec();
     const designAsset = await this.DesignAssetModel.findById(id).exec();
+
+    // does the design asset exist?
+    if (!designAsset) {
+      throw new NotFoundException({
+        success: false,
+        status: HttpStatus.NOT_FOUND,
+        message: 'Design asset not found',
+        error: 'Design asset does not exist',
+      });
+    }
+
+    // is the user the uploader of the design asset?
     const uploadedBy = designAsset?.uploadedBy;
     if (user?.username !== uploadedBy) {
       throw new ForbiddenException({
@@ -132,6 +142,9 @@ export class DesignAssetService {
         error: 'User does not have permission to update this design asset',
       });
     }
+
+
+    const data = await this.DesignAssetModel.findByIdAndDelete(id);
 
     return {
       success: true,

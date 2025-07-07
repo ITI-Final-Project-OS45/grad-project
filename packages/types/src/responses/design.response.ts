@@ -1,6 +1,8 @@
+import { DesignAssetType } from "../enums";
+
 export interface DesignResponse {
     
-    type: string; // Figma, Mockup
+    type: DesignAssetType; // Figma, Mockup
     description: string;
     assetUrl: string;
     

@@ -1,4 +1,5 @@
-// dialog
+'use client';
+
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,16 +31,23 @@ import {
 import { Textarea } from "../ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, Plus } from "lucide-react"
+import React, { useState } from "react";
 
 export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId: string, createDesign: any } /* { form, handleSubmit }: { form: ReturnType<typeof useForm<ZDesignsFormData>>, handleSubmit: (data: ZDesignsFormData) => void} */) {
 
+    const [open, setOpen] = useState(false)
+
     const form = useForm<ZDesignsFormData>({
-        resolver: zodResolver(ZDesignsSchema)
+        resolver: zodResolver(ZDesignsSchema),
+        defaultValues: {
+            type: "figma", // Default to figma
+            description: "",
+        }
     })
-    
+
+     const closeDialog = () => setOpen(false)
+
     const handleSubmit = async (data: ZDesignsFormData) => {
-        // console.log("❓❓Form data submitted:", data);
-        
         const formData = new FormData();
         formData.append("workspaceId", workspacesId);
         formData.append("type", data.type);
@@ -53,14 +61,16 @@ export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId:
         }
 
         try {
+            form.reset(); // Clear the form fields after successful submit
             await createDesign.mutateAsync(formData as any);
+            closeDialog(); // Close the dialog after successful submit
         } catch (error) {
             console.error("Error creating design:", error);
         }
     }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {/* <Button variant="outline">Create New Design</Button> */}
                 <Button

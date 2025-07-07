@@ -54,7 +54,7 @@ export function useDesign (workspaceId: string) {
         queryClient.setQueryData(queryKeys.designs.detail(response.data._id), response.data);
 
         // Update the designs list optimistically
-        queryClient.setQueryData(queryKeys.designs.lists(), (oldData: Design[] | undefined) => {
+        queryClient.setQueryData(queryKeys.designs.byWorkspace(workspaceId), (oldData: Design[] | undefined) => {
           if (oldData) {
             return oldData.map((design) => (design._id === response.data._id ? response.data : design));
           }
