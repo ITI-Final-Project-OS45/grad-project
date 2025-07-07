@@ -6,6 +6,7 @@ import {
   ApiError,
   ApiResponse,
   CreateReleaseDto,
+  UpdateReleaseDto,
   QAStatus,
   UserRole,
 } from '@repo/types';
@@ -120,14 +121,39 @@ export class ReleaseService {
 
   async update(
     releaseId: string,
-    updateReleaseDto: Partial<CreateReleaseDto>,
+    updateReleaseDto: UpdateReleaseDto,
     userId: string,
   ): Promise<ApiResponse<Release, ApiError>> {
-    const releaseExistAndIsManager = await this.releaseModel
-      .findOne({ _id: releaseId, createdBy: userId })
-      .exec();
-    if (!releaseExistAndIsManager) {
+    const release = await this.releaseModel.findById(releaseId).exec();
+
+    if (!release) {
       throw new ReleaseNotFoundException();
+    }
+
+    // Check if user is manager in the workspace
+    const workspace = await this.workspaceModel
+      .findById(release.workspaceId)
+      .exec();
+
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    // Find the user's role in the workspace
+    const userMember = workspace.members.find(
+      (member) => member.userId.toString() === userId,
+    );
+
+    if (!userMember) {
+      throw new UserNotMemberException();
+    }
+
+    // Check if user is manager
+    if (userMember.role !== UserRole.Manager) {
+      throw new InsufficientPermissionsException(
+        'update release',
+        UserRole.Manager,
+      );
     }
 
     const updatedRelease = await this.releaseModel
@@ -153,11 +179,36 @@ export class ReleaseService {
     releaseId: string,
     userId: string,
   ): Promise<ApiResponse<Release, ApiError>> {
-    const releaseExistAndIsManager = await this.releaseModel
-      .findOne({ _id: releaseId, createdBy: userId })
-      .exec();
-    if (!releaseExistAndIsManager) {
+    const release = await this.releaseModel.findById(releaseId).exec();
+
+    if (!release) {
       throw new ReleaseNotFoundException();
+    }
+
+    // Check if user is manager in the workspace
+    const workspace = await this.workspaceModel
+      .findById(release.workspaceId)
+      .exec();
+
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    // Find the user's role in the workspace
+    const userMember = workspace.members.find(
+      (member) => member.userId.toString() === userId,
+    );
+
+    if (!userMember) {
+      throw new UserNotMemberException();
+    }
+
+    // Check if user is manager
+    if (userMember.role !== UserRole.Manager) {
+      throw new InsufficientPermissionsException(
+        'deploy release',
+        UserRole.Manager,
+      );
     }
 
     const updatedRelease = await this.releaseModel.findByIdAndUpdate(
