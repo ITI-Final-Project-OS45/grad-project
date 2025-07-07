@@ -82,13 +82,8 @@ export class DesignAssetService {
   async update(id: string, updateDesignAsset: UpdateDesignAssetDto, file: Express.Multer.File, userId: string) {
     console.log(updateDesignAsset);
     let data: DesignAssetDocument | null
-    // if(file){
-    //   const {secure_url:assetUrl} = await this.cloudinaryService.uploadFile(file);
-    //   // data = await this.DesignAssetModel.findByIdAndUpdate(id, { $set: {...updateDesignAsset, assetUrl} }, { new: true } );
-    // }else{
-    //   // data = await this.DesignAssetModel.findByIdAndUpdate(id, { $set: updateDesignAsset }, { new: true } );
-    // }
 
+    // is the user the uploader of the design asset?
     const user = await this.userModel.findById(userId).exec();
     const designAsset = await this.DesignAssetModel.findById(id).exec();
     const uploadedBy = designAsset?.uploadedBy;

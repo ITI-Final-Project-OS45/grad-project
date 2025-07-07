@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useWorkspacePermissions } from "@/lib/permissions"
+import { useUser } from "@/hooks/use-user"
+import { useWorkspaceMembersByWorkspace } from "@/hooks/use-workspace-members"
 
 export default function DesignsPage() {
   const { id: workspaceId }: { id: string } = useParams()
@@ -21,13 +24,21 @@ export default function DesignsPage() {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [editingDesign, setEditingDesign] = React.useState<DesignResponse | null>(null)
 
+  // Get current user and workspace members
+  const { currentUser } = useUser();
+  const { data: members = [] } = useWorkspaceMembersByWorkspace(workspaceId);
+  const currentUserId = currentUser?.data?._id;
+  const currentUserMember = members.find((m) => m.userId._id === currentUserId);
+  const currentUserRole = currentUserMember?.role;
+  // Use correct permissions
+  const { canCreateDesign, canUpdateDesign, canDeleteDesign } = useWorkspacePermissions(currentUserId, currentUserRole);
+
   function onDeleteDesign(designId: string) {
     console.log("Delete design  of ID:", designId)
     deleteDesign.mutateAsync(designId)
   }
 
   function onEditDesign(designId: string) {
-    console.log('....... doing the job ...........');
     
     const design = designs?.find((d) => d._id === designId);
     
@@ -76,7 +87,7 @@ export default function DesignsPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <CreateDesignDialog workspacesId={workspaceId} createDesign={createDesign} />
+              {canCreateDesign && <CreateDesignDialog workspacesId={workspaceId} createDesign={createDesign} />}
             </div>
           </div>
         </div>
@@ -100,10 +111,14 @@ export default function DesignsPage() {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Palette className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No designs yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md">
-              Get started by creating your first design asset. Upload images, mockups, or connect your Figma designs.
-            </p>
-            <CreateDesignDialog workspacesId={workspaceId} createDesign={createDesign} />
+            {canCreateDesign && (
+              <>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  Get started by creating your first design asset. Upload images, mockups, or connect your Figma designs.
+                </p>
+                <CreateDesignDialog workspacesId={workspaceId} createDesign={createDesign} />
+              </>
+            )}
           </div>
         )}
 
@@ -116,6 +131,8 @@ export default function DesignsPage() {
                 workspacesId={workspaceId}
                 onEditDesign={onEditDesign}
                 onDeleteDesign={onDeleteDesign}
+                canUpdateDesign={canUpdateDesign}
+                canDeleteDesign={canDeleteDesign}
               />
             ))}
           </DesignsList>
@@ -123,7 +140,7 @@ export default function DesignsPage() {
       </div>
 
       {/* Edit Design Dialog */}
-      {editingDesign && <UpdateDesignDialog
+      {(editingDesign && canUpdateDesign) && <UpdateDesignDialog
         workspacesId={workspaceId}
         editingDesign={editingDesign}
         open={editDialogOpen}
@@ -133,7 +150,7 @@ export default function DesignsPage() {
   )
 }
 
-export function DesignsList({ children }: { children: React.ReactNode }) {
+export function DesignsList({ children}: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">{children}</div>
 }
 
@@ -143,13 +160,20 @@ export function DesignItem({
   onEditDesign,
   onDeleteDesign,
   isDeleting,
+  canUpdateDesign, 
+  canDeleteDesign 
 }: {
   design: DesignResponse
   workspacesId: string
   onEditDesign: (designId: string) => void
   onDeleteDesign: (designId: string) => void
   isDeleting?: boolean
+  canUpdateDesign: boolean
+  canDeleteDesign: boolean
 }) {
+  const [open, setOpen] = React.useState(false);
+  // const { canUpdateDesign, canDeleteDesign } = useWorkspacePermissions()
+
   return (
     <Link href={`/workspaces/${workspacesId}/designs/${design._id}`} className="block">
       <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-primary/50 group">
@@ -163,7 +187,7 @@ export function DesignItem({
                 {design.type === "figma" ? "Figma Design" : "Mockup Design"}
               </CardDescription>
             </div>
-            <DropdownMenu>
+            {(canUpdateDesign && canDeleteDesign) &&(<DropdownMenu open={open} onOpenChange={setOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -177,9 +201,10 @@ export function DesignItem({
               <DropdownMenuContent align="end" className="w-36">
                 <DropdownMenuItem
                   onClick={(event) => {
-                    event.stopPropagation()
-                    event.preventDefault()
-                    onEditDesign(design._id)
+                    event.stopPropagation();
+                    event.preventDefault();
+                    onEditDesign(design._id);
+                    setOpen(false);
                   }}
                   className="text-sm"
                 >
@@ -188,9 +213,10 @@ export function DesignItem({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(event) => {
-                    event.stopPropagation()
-                    event.preventDefault()
-                    onDeleteDesign(design._id)
+                    event.stopPropagation();
+                    event.preventDefault();
+                    onDeleteDesign(design._id);
+                    setOpen(false);
                   }}
                   className="text-sm text-destructive focus:text-destructive"
                   disabled={isDeleting}
@@ -199,7 +225,7 @@ export function DesignItem({
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu>)}
           </div>
         </CardHeader>
 

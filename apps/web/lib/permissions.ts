@@ -119,6 +119,18 @@ export const WorkspacePermissions = {
     return [UserRole.QA, UserRole.Manager].includes(context.currentUserRole as UserRole);
   },
 
+  canCreateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
+  canUpdateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
+  canDeleteDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
   // General utility functions
   isManager: (role?: UserRole): boolean => {
     return role === UserRole.Manager;
@@ -179,6 +191,11 @@ export const useWorkspacePermissions = (
     canCreateHotfix: WorkspacePermissions.canCreateHotfix(context),
     canUpdateHotfix: WorkspacePermissions.canUpdateHotfix(context),
     canDeleteHotfix: WorkspacePermissions.canDeleteHotfix(context),
+
+    // Design permissions
+    canCreateDesign: WorkspacePermissions.canCreateDesign(context),
+    canUpdateDesign: WorkspacePermissions.canUpdateDesign(context),
+    canDeleteDesign: WorkspacePermissions.canDeleteDesign(context),
 
     // Utility
     isManager: WorkspacePermissions.isManager(currentUserRole),

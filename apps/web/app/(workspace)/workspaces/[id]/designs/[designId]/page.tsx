@@ -10,6 +10,10 @@ import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import React from "react"
+import { UpdateDesignDialog } from "@/components/design/update-design-dialog"
+import { useUser } from "@/hooks/use-user"
+import { useWorkspaceMembersByWorkspace } from "@/hooks/use-workspace-members"
+import { useWorkspacePermissions } from "@/lib/permissions"
 
 // Utility functions for download and share
 async function downloadDesign(design: any) {
@@ -74,51 +78,54 @@ async function shareDesign(design: any) {
   }
 }
 
+
 export default function DesignPage() {
-  const { designId }: { designId: string } = useParams()
-  const router = useRouter()
-  const { data: design, error, isLoading } = useDesignById(designId)
+  const { id: workspaceId, designId }: { id: string; designId: string } = useParams();
+  const router = useRouter();
+  const { data: design, error, isLoading } = useDesignById(designId);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSharing, setIsSharing] = React.useState(false);
+  const [shareMessage, setShareMessage] = React.useState("");
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
 
-  // Add these state variables
-  const [isDownloading, setIsDownloading] = React.useState(false)
-  const [isSharing, setIsSharing] = React.useState(false)
-  const [shareMessage, setShareMessage] = React.useState("")
+  // Permissions logic
+  const { currentUser } = useUser();
+  const { data: members = [] } = useWorkspaceMembersByWorkspace(workspaceId);
+  const currentUserId = currentUser?.data?._id;
+  const currentUserMember = members.find((m) => m.userId._id === currentUserId);
+  const currentUserRole = currentUserMember?.role;
+  const { canUpdateDesign } = useWorkspacePermissions(currentUserId, currentUserRole);
 
-  // Add these handler functions
   const handleDownload = async () => {
-    if (!design) return
-
-    setIsDownloading(true)
+    if (!design) return;
+    setIsDownloading(true);
     try {
-      await downloadDesign(design)
-      // Show success message or toast here if you have a toast system
+      await downloadDesign(design);
     } catch (error) {
-      console.error("Download failed:", error)
-      // Show error message or toast here
+      console.error("Download failed:", error);
     } finally {
-      setIsDownloading(false)
+      setIsDownloading(false);
     }
-  }
+  };
 
   const handleShare = async () => {
-    if (!design) return
-
-    setIsSharing(true)
-    setShareMessage("")
+    if (!design) return;
+    setIsSharing(true);
+    setShareMessage("");
     try {
-      const result = await shareDesign(design)
+      const result = await shareDesign(design);
       if (result === "copied") {
-        setShareMessage("Link copied to clipboard!")
-        setTimeout(() => setShareMessage(""), 3000)
+        setShareMessage("Link copied to clipboard!");
+        setTimeout(() => setShareMessage(""), 3000);
       }
     } catch (error) {
-      console.error("Share failed:", error)
-      setShareMessage("Failed to share")
-      setTimeout(() => setShareMessage(""), 3000)
+      console.error("Share failed:", error);
+      setShareMessage("Failed to share");
+      setTimeout(() => setShareMessage(""), 3000);
     } finally {
-      setIsSharing(false)
+      setIsSharing(false);
     }
-  }
+  };
 
   if (isLoading) {
     return <LoadingSkeleton />
@@ -205,10 +212,14 @@ export default function DesignPage() {
                     <Download className="h-4 w-4 mr-2" />
                     {isDownloading ? "Downloading..." : "Download"}
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Design
-                  </DropdownMenuItem>
+              {canUpdateDesign && (
+                <DropdownMenuItem
+                  onClick={() => setEditDialogOpen(true)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Design
+                </DropdownMenuItem>
+              )}
                   <DropdownMenuItem onClick={() => design?.assetUrl && window.open(design.assetUrl, "_blank")}>
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open in New Tab
@@ -307,10 +318,22 @@ export default function DesignPage() {
                 <Separator />
 
                 <div className="space-y-2">
-                  <Button className="w-full gap-2" size="sm">
-                    <Edit className="h-4 w-4" />
-                    Edit Design
-                  </Button>
+                  {canUpdateDesign && (
+                    <>
+                      <Button className="w-full gap-2" size="sm"
+                        onClick={() => setEditDialogOpen(true)}
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit Design
+                      </Button>
+                      <UpdateDesignDialog
+                        workspacesId={workspaceId}
+                        editingDesign={design}
+                        open={editDialogOpen}
+                        setOpen={setEditDialogOpen}
+                      />
+                    </>
+                  )}
                   <Button
                     variant="outline"
                     className="w-full gap-2 bg-transparent"

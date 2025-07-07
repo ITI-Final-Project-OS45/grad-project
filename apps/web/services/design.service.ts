@@ -49,7 +49,6 @@ export class DesignService {
         "Content-Type": "multipart/form-data",
       },
     });
-    // const design = await apiClient.post<Design>("design-assets", {workspaceId: '6852ad075f27723b46b7cbdb', type: 'mockup', description: "description fo the des."});
     return design;
   }
 
@@ -58,7 +57,11 @@ export class DesignService {
   * Maps to PATCH /design-assets/:id
   */
   static async updateDesign(id: string, data: Partial<Design>): Promise<ApiResponse<Design, ApiError>> {
-    const design = await apiClient.patch<Design>(DesignService.ENDPOINTS.DESIGN_BY_ID(id), data);
+    const design = await apiClient.patch<Design>(DesignService.ENDPOINTS.DESIGN_BY_ID(id), data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return design;
   }
 

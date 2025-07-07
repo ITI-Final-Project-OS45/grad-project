@@ -36,35 +36,37 @@ import { useDesign } from "@/hooks/use-designs";
 import { DesignResponse } from "@repo/types";
 
 export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen }: {workspacesId: string, editingDesign: DesignResponse, open: boolean, setOpen: (open: boolean) => void }) {
-
-    // const [open, setOpen] = useState(false)
-
     const form = useForm<ZDesignsFormData>({
         resolver: zodResolver(ZDesignsSchema),
         defaultValues: {
-            type: editingDesign.type || "figma", // Default to figma
+            type: editingDesign.type || "figma",
             description: editingDesign.description || "",
             assetUrl: editingDesign.assetUrl || "",
-
         }
     })
 
+    // Reset form values when editingDesign changes
+    React.useEffect(() => {
+        form.reset({
+            type: editingDesign.type || "figma",
+            description: editingDesign.description || "",
+            assetUrl: editingDesign.assetUrl || "",
+        });
+    }, [editingDesign]);
 
     const updateDesign = useDesign(workspacesId).updateDesign;
-
-     const closeDialog = () => setOpen(false)
+    const closeDialog = () => setOpen(false)
 
     const handleSubmit = async (data: ZDesignsFormData) => {
         const formData = new FormData();
         formData.append("type", data.type);
         formData.append("description", data.description || "");
-        if (data.assetUrl !== undefined && data.assetUrl !== "") {
+        if (data.file && data.file.length > 0 && data.file[0]) {
+            formData.append("file", data.file[0]);
+        }else if (data.assetUrl !== undefined && data.assetUrl !== "") {
             formData.append("assetUrl", data.assetUrl);
         }
 
-        if (data.file && data.file.length > 0 && data.file[0]) {
-            formData.append("file", data.file[0]);
-        }
 
         try {
             form.reset(); // Clear the form fields after successful submit
@@ -78,21 +80,6 @@ export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                {/* <Button variant="outline">Update New Design</Button> */}
-                <Button
-                    size="lg"
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
-                >
-                    <div className="mr-2">
-                        <Plus className="h-5 w-5" />
-                    </div>
-                    Update Design
-                    <div
-                        className="ml-2"
-                    >
-                        <ArrowRight className="h-5 w-5" />
-                    </div>
-                </Button>
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-[425px]">
