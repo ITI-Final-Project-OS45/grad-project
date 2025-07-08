@@ -1,6 +1,6 @@
 import { queryKeys } from "@/lib/axios";
-import { CreateDesingData, Design, DesignService } from "@/services/design.service";
-import { ApiResponse, CreateDesignAssetDto, DesignAssetDto, UpdateDesignAssetDto, ApiError } from "@repo/types";
+import { Design, DesignService } from "@/services/design.service";
+import { ApiResponse, UpdateDesignAssetDto, ApiError } from "@repo/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -54,7 +54,7 @@ export function useDesign (workspaceId: string) {
         queryClient.setQueryData(queryKeys.designs.detail(response.data._id), response.data);
 
         // Update the designs list optimistically
-        queryClient.setQueryData(queryKeys.designs.lists(), (oldData: Design[] | undefined) => {
+        queryClient.setQueryData(queryKeys.designs.byWorkspace(workspaceId), (oldData: Design[] | undefined) => {
           if (oldData) {
             return oldData.map((design) => (design._id === response.data._id ? response.data : design));
           }
@@ -72,6 +72,7 @@ export function useDesign (workspaceId: string) {
   });
 
   // Delete Design Mutation
+  // Delete Design Mutation
   const deleteDesign = useMutation<ApiResponse<null, ApiError>, Error, string>({
     mutationFn: (designId) => DesignService.deleteDesign(designId),
     onSuccess: (response, designId) => {
@@ -79,12 +80,18 @@ export function useDesign (workspaceId: string) {
         // Remove the design from the individual design cache
         queryClient.setQueryData(queryKeys.designs.detail(designId), null);
 
-        // Remove the design from the designs list optimistically
-        queryClient.setQueryData(queryKeys.designs.lists(), (oldData: Design[] | undefined) => {
+        // Remove the design from the designs list optimistically - use the correct query key
+        queryClient.setQueryData(queryKeys.designs.byWorkspace(workspaceId), (oldData: Design[] | undefined) => {
           if (oldData) {
             return oldData.filter((design) => design._id !== designId);
           }
           return [];
+        });
+
+        // Invalidate and refetch designs list to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.designs.byWorkspace(workspaceId),
+          refetchType: "active",
         });
 
         // Show success toast
@@ -94,7 +101,7 @@ export function useDesign (workspaceId: string) {
     onError: (error: unknown) => {
       const errorResponse = error as Error;
       toast.error(errorResponse.message || "Failed to delete design");
-    }
+    },
   });
 
   return {

@@ -7,8 +7,18 @@ export interface BugResponse {
   severity: BugSeverity;
   status: BugStatus;
   releaseId: string;
-  reportedBy: string;
-  assignedTo?: string;
+  reportedBy: {
+    _id: string;
+    username: string;
+    displayName: string;
+    email: string;
+  };
+  assignedTo: {
+    _id: string;
+    username: string;
+    displayName: string;
+    email: string;
+  };
   stepsToReproduce?: string;
   expectedBehavior?: string;
   actualBehavior?: string;

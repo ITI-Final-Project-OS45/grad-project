@@ -161,6 +161,18 @@ export const WorkspacePermissions = {
     return !!context.currentUserRole;
   },
 
+  canCreateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
+  canUpdateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
+  canDeleteDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(context.currentUserRole as UserRole);
+  },
+
   // General utility functions
   isManager: (role?: UserRole): boolean => {
     return role === UserRole.Manager;
@@ -228,6 +240,11 @@ export const useWorkspacePermissions = (
     canUpdateTask: WorkspacePermissions.canUpdateTask(context),
     canDeleteTask: WorkspacePermissions.canDeleteTask(context),
     canViewTasks: WorkspacePermissions.canViewTasks(context),
+
+    // Design permissions
+    canCreateDesign: WorkspacePermissions.canCreateDesign(context),
+    canUpdateDesign: WorkspacePermissions.canUpdateDesign(context),
+    canDeleteDesign: WorkspacePermissions.canDeleteDesign(context),
 
     // Utility
     isManager: WorkspacePermissions.isManager(currentUserRole),

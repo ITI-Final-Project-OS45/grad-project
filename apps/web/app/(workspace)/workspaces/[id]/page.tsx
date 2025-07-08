@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Palette, Rocket } from "lucide-react";
+import { CheckSquare, FileText, Palette, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspaceById } from "@/hooks/use-workspace";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
@@ -26,18 +26,16 @@ const featureCards: FeatureCard[] = [
     borderColor: "border-blue-200/50 dark:border-blue-800/50",
     features: ["Markdown Editor", "Version Control", "PDF Export", "Team Collaboration"],
   },
-  // TODO: Uncomment when tasks feature is ready
-  // {
-  //   title: "Task Management",
-  //   description: "Organize tasks and track progress with intuitive workflow management",
-  //   icon: CheckSquare,
-  //   href: "/tasks",
-  //   color: "text-emerald-600 dark:text-emerald-400",
-  //   bgColor: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-950/30",
-  //   borderColor: "border-emerald-200/50 dark:border-emerald-800/50",
-  //   features: ["Kanban Board", "Task Assignment", "Due Dates", "Priority Management"],
-  // },
-  // TODO: Uncomment when designs feature is ready
+  {
+    title: "Task Management",
+    description: "Organize tasks and track progress with intuitive workflow management",
+    icon: CheckSquare,
+    href: "/tasks",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-950/30",
+    borderColor: "border-emerald-200/50 dark:border-emerald-800/50",
+    features: ["Kanban Board", "Task Assignment", "Due Dates", "Priority Management"],
+  },
   {
     title: "Design Assets",
     description: "Store and collaborate on design files with version control",
@@ -107,10 +105,7 @@ export default function WorkspacePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <WorkspaceHeader
-        workspace={workspace}
-        onMembersClick={handleMembersClick}
-      />
+      <WorkspaceHeader workspace={workspace} onMembersClick={handleMembersClick} />
 
       <main className="container mx-auto px-6 py-8 max-w-6xl space-y-8">
         <WorkspaceStats stats={stats} isLoading={isDataLoading} />

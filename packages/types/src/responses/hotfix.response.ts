@@ -5,7 +5,14 @@ export interface HotfixResponse {
   title: string;
   description: string;
   releaseId: string;
-  fixedBy: string;
+  fixedBy:
+    | {
+        _id: string;
+        username: string;
+        displayName: string;
+        email: string;
+      }
+    | string;
   fixedDate?: string;
   status: HotfixStatus;
   attachedCommits: string[];

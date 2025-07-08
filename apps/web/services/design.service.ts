@@ -3,7 +3,7 @@ import { ApiError, ApiResponse, DesignResponse } from "@repo/types";
 
 export type Design = DesignResponse;
 
-export interface CreateDesingData {
+export interface CreateDesignData {
   workspaceId: string;
   type: string; // e.g., "Figma", "Mockup"
   description?: string;
@@ -42,14 +42,13 @@ export class DesignService {
   * Create a design
   * Maps to POST /design-assets
   */
-  static async createDesign(data: CreateDesingData): Promise<ApiResponse<Design, ApiError>> { //! was taken  Partial<Design>
+  static async createDesign(data: CreateDesignData): Promise<ApiResponse<Design, ApiError>> { //! was taken  Partial<Design>
   // static async createDesign(): Promise<ApiResponse<Design, ApiError>> { //! was taken  Partial<Design>
     const design = await apiClient.post<Design>("design-assets", data, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-    // const design = await apiClient.post<Design>("design-assets", {workspaceId: '6852ad075f27723b46b7cbdb', type: 'mockup', description: "description fo the des."});
     return design;
   }
 
@@ -58,7 +57,11 @@ export class DesignService {
   * Maps to PATCH /design-assets/:id
   */
   static async updateDesign(id: string, data: Partial<Design>): Promise<ApiResponse<Design, ApiError>> {
-    const design = await apiClient.patch<Design>(DesignService.ENDPOINTS.DESIGN_BY_ID(id), data);
+    const design = await apiClient.patch<Design>(DesignService.ENDPOINTS.DESIGN_BY_ID(id), data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return design;
   }
 
