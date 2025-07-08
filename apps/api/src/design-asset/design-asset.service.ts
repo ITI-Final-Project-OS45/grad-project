@@ -1,23 +1,48 @@
-import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApiError, ApiResponse, CreateDesignAssetDto, DesignAssetDto, UpdateDesignAssetDto, UserRole } from '@repo/types';
+import {
+  ApiError,
+  ApiResponse,
+  CreateDesignAssetDto,
+  DesignAssetDto,
+  UpdateDesignAssetDto,
+  UserRole,
+} from '@repo/types';
 import { Model } from 'mongoose';
 import { CloudinaryService } from 'nestjs-cloudinary';
-import { DesignAsset, DesignAssetDocument } from 'src/schemas/design-asset.schema';
+import {
+  DesignAsset,
+  DesignAssetDocument,
+} from 'src/schemas/design-asset.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
 
 @Injectable()
 export class DesignAssetService {
   constructor(
-    @InjectModel(DesignAsset.name) private readonly DesignAssetModel: Model<DesignAssetDocument>,
-    @InjectModel(Workspace.name) private readonly workspaceModel: Model<WorkspaceDocument>,
+    @InjectModel(DesignAsset.name)
+    private readonly DesignAssetModel: Model<DesignAssetDocument>,
+    @InjectModel(Workspace.name)
+    private readonly workspaceModel: Model<WorkspaceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    private readonly cloudinaryService: CloudinaryService
-  ){}
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
-  async create(designAssetDto: DesignAssetDto, userId: string, file: Express.Multer.File): Promise<ApiResponse<DesignAsset, ApiError>> {
-    const workspaceExists = await this.workspaceModel.findById(designAssetDto.workspaceId).exec();
+  async create(
+    designAssetDto: DesignAssetDto,
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<ApiResponse<DesignAsset, ApiError>> {
+    const workspaceExists = await this.workspaceModel
+      .findById(designAssetDto.workspaceId)
+      .exec();
     if (!workspaceExists) {
       throw new NotFoundException({
         success: false,
@@ -26,10 +51,15 @@ export class DesignAssetService {
         error: 'Workspace does not exist',
       });
     }
-    
+
     const user = await this.userModel.findById(userId).exec();
-    const member = workspaceExists.members.find(member => member.userId.toString() === userId);
-    if (!member || (member.role !== UserRole.Designer && member.role !== UserRole.Manager)) {
+    const member = workspaceExists.members.find(
+      (member) => member.userId.toString() === userId,
+    );
+    if (
+      !member ||
+      (member.role !== UserRole.Designer && member.role !== UserRole.Manager)
+    ) {
       throw new ForbiddenException({
         success: false,
         status: HttpStatus.FORBIDDEN,
@@ -38,35 +68,46 @@ export class DesignAssetService {
       });
     }
 
-    let url:string;
-    if(file){
-      const {secure_url} = await this.cloudinaryService.uploadFile(file);
+    let url: string;
+    if (file) {
+      const { secure_url } = await this.cloudinaryService.uploadFile(file);
       url = secure_url;
-    }else{
+    } else {
       url = designAssetDto?.assetUrl || ''; //todo add embed link
     }
-      
-    const createDesignAssetDto: CreateDesignAssetDto  = {...designAssetDto, assetUrl:url, uploadedBy:user!.username};
-    
-    const designAsset =  await this.DesignAssetModel.create(createDesignAssetDto);
+
+    const createDesignAssetDto: CreateDesignAssetDto = {
+      ...designAssetDto,
+      assetUrl: url,
+      uploadedBy: user!.username,
+    };
+
+    const designAsset =
+      await this.DesignAssetModel.create(createDesignAssetDto);
+
+    // Add design asset to workspace's designs array
+    await this.workspaceModel.findByIdAndUpdate(
+      designAssetDto.workspaceId,
+      { $push: { designs: designAsset._id } },
+      { new: true },
+    );
 
     return {
       success: true,
       status: HttpStatus.CREATED,
       message: 'Desing asset created successfully',
       data: designAsset,
-    }
-      
+    };
   }
 
   async findAll(workspaceId: string) {
-    const data = await this.DesignAssetModel.find({workspaceId: workspaceId});
+    const data = await this.DesignAssetModel.find({ workspaceId: workspaceId });
     return {
       success: true,
       status: HttpStatus.FOUND,
       message: 'data gotten successfully',
       data: data,
-    }
+    };
   }
 
   async findOne(id: string) {
@@ -76,12 +117,17 @@ export class DesignAssetService {
       status: HttpStatus.FOUND,
       message: 'data gotten successfully',
       data: data,
-    }
+    };
   }
 
-  async update(id: string, updateDesignAsset: UpdateDesignAssetDto, file: Express.Multer.File, userId: string) {
+  async update(
+    id: string,
+    updateDesignAsset: UpdateDesignAssetDto,
+    file: Express.Multer.File,
+    userId: string,
+  ) {
     console.log(updateDesignAsset);
-    let data: DesignAssetDocument | null
+    let data: DesignAssetDocument | null;
 
     // is the user the uploader of the design asset?
     const user = await this.userModel.findById(userId).exec();
@@ -96,21 +142,25 @@ export class DesignAssetService {
       });
     }
 
-    let url:string;
-    if(file){
-      const {secure_url} = await this.cloudinaryService.uploadFile(file);
+    let url: string;
+    if (file) {
+      const { secure_url } = await this.cloudinaryService.uploadFile(file);
       url = secure_url;
-    }else{
+    } else {
       url = updateDesignAsset?.assetUrl || ''; //todo add embed link
     }
-    data = await this.DesignAssetModel.findByIdAndUpdate(id, { $set: {...updateDesignAsset, assetUrl:url} }, { new: true } );
+    data = await this.DesignAssetModel.findByIdAndUpdate(
+      id,
+      { $set: { ...updateDesignAsset, assetUrl: url } },
+      { new: true },
+    );
 
     return {
       success: true,
       status: HttpStatus.FOUND,
       message: 'data gotten successfully',
       data: data,
-    }
+    };
   }
 
   async remove(id: string, userId: string) {
@@ -138,6 +188,12 @@ export class DesignAssetService {
       });
     }
 
+    // Remove design asset from workspace's designs array
+    await this.workspaceModel.findByIdAndUpdate(
+      designAsset.workspaceId,
+      { $pull: { designs: id } },
+      { new: true },
+    );
 
     const data = await this.DesignAssetModel.findByIdAndDelete(id);
 
@@ -146,6 +202,6 @@ export class DesignAssetService {
       status: HttpStatus.FOUND,
       message: 'data gotten successfully',
       data: data,
-    }
+    };
   }
 }

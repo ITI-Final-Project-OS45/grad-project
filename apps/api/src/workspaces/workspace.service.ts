@@ -23,44 +23,39 @@ export class WorkspaceService {
     workspaceData: WorkspaceDto,
     createdBy: string,
   ): Promise<ApiResponse<Workspace, ApiError>> {
-    try {
-      const newWorkspace = await this.workspaceModel.create({
-        ...workspaceData,
-        members: [
-          {
-            userId: createdBy,
-            role: 'manager',
-            joinedAt: new Date(),
-          },
-        ],
-        createdBy,
-      });
-      if (!newWorkspace) {
-        throw new BadRequestException('Failed to create workspace');
-      }
-
-      // bidirectional relationship
-      const updatedUser = await this.userModel.findByIdAndUpdate(
-        createdBy,
+    const newWorkspace = await this.workspaceModel.create({
+      ...workspaceData,
+      members: [
         {
-          $push: { workspaces: newWorkspace._id },
+          userId: createdBy,
+          role: 'manager',
+          joinedAt: new Date(),
         },
-        { new: true },
-      );
-      if (!updatedUser) {
-        throw new BadRequestException('Failed to update user with workspace');
-      }
-
-      return {
-        success: true,
-        status: HttpStatus.CREATED,
-        message: 'Workspace created successfully',
-        data: newWorkspace,
-      };
-    } catch (err) {
-      console.log(`There's error while creating new workspace: ${String(err)}`);
-      throw new BadRequestException('failed to create this workspace');
+      ],
+      createdBy,
+    });
+    if (!newWorkspace) {
+      throw new BadRequestException('Failed to create workspace');
     }
+
+    // bidirectional relationship
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      createdBy,
+      {
+        $push: { workspaces: newWorkspace._id },
+      },
+      { new: true },
+    );
+    if (!updatedUser) {
+      throw new BadRequestException('Failed to update user with workspace');
+    }
+
+    return {
+      success: true,
+      status: HttpStatus.CREATED,
+      message: 'Workspace created successfully',
+      data: newWorkspace,
+    };
   }
   async getOneWorkspace(
     workspaceId: string,
@@ -76,6 +71,8 @@ export class WorkspaceService {
         path: 'releases',
         populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
       })
+      .populate('tasks')
+      .populate('designs')
       .exec();
 
     if (!workspace) {
@@ -103,7 +100,10 @@ export class WorkspaceService {
       .populate({
         path: 'releases',
         populate: [{ path: 'bugs' }, { path: 'hotfixes' }],
-      }).exec();
+      })
+      .populate('tasks')
+      .populate('designs')
+      .exec();
     if (!allWorkspaces) {
       throw new NotFoundException("the user doesn't has workspaces");
     }
