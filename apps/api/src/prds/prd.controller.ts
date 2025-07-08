@@ -1,4 +1,5 @@
-import { ApiError, ApiResponse, CreatePrdDto, UpdatePrdDto } from '@repo/types';
+import { CreatePrdDto, UpdatePrdDto } from '@repo/types';
+// import { Delete } from '@nestjs/common';
 import {
   Controller,
   Post,
@@ -9,14 +10,12 @@ import {
   Param,
   Get,
   Put,
-  Delete,
   Req,
+  Delete,
 } from '@nestjs/common';
 import { PrdService } from './prd.service';
 import { AuthGuard } from 'src/guards/auth.guards';
-// import { Prd } from 'src/schemas/prd.schema';
 import type { RequestWithUser } from 'src/interfaces/request-user.interface';
-import { Prd } from 'src/schemas/prd.schema';
 
 @Controller('workspaces/:workspaceId/prd')
 @UseGuards(AuthGuard)
@@ -43,35 +42,27 @@ export class PrdController {
     return await this.prdService.findByWorkspace(workspaceId);
   }
 
-  @Get(':id')
-  @HttpCode(HttpStatus.OK)
-  async getPrdById(
-    @Param('workspaceId') workspaceId: string,
-    @Param('id') id: string,
-  ) {
-    // Optionally, you can check if the PRD belongs to the workspace
-    return await this.prdService.findById(id);
-  }
-
-  @Put(':id')
+  @Put()
   @HttpCode(HttpStatus.OK)
   async updatePrd(
     @Param('workspaceId') workspaceId: string,
-    @Param('id') id: string,
     @Body() updatePrdDto: UpdatePrdDto,
     @Req() req: RequestWithUser,
   ) {
-    // Optionally, you can check if the PRD belongs to the workspace
-    return await this.prdService.update(id, updatePrdDto, req.userId);
+    // Update the latest PRD for the workspace
+    return await this.prdService.updateByWorkspace(
+      workspaceId,
+      updatePrdDto,
+      req.userId,
+    );
   }
-
-  //   @Post(':id/version')
-  //   @HttpCode(HttpStatus.OK)
-  //   async addVersion(
-  //     @Param('id') id: string,
-  //     @Body() versionDto: any, // { title, content }
-  //     @Req() req: RequestWithUser,
-  //   ) {
-  //     return await this.prdService.addVersion(id, versionDto, req.userId);
-  //   }
+  @Delete()
+  @HttpCode(HttpStatus.OK)
+  async deletePrd(
+    @Param('workspaceId') workspaceId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    // Delete the latest PRD for the workspace
+    return await this.prdService.deleteByWorkspace(workspaceId, req.userId);
+  }
 }
