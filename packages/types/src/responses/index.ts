@@ -6,3 +6,4 @@ export * from "./design.response";
 export * from "./release.response";
 export * from "./bug.response";
 export * from "./hotfix.response";
+export * from "./task.response";
