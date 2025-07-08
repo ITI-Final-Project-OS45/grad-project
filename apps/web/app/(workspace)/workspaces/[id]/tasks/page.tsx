@@ -6,6 +6,8 @@ import { KanbanColumn, Task, TaskStatus, TaskPriority } from "@repo/types";
 import { TaskService } from "@/services/task.service";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
 import {
   WorkspaceMemberService,
@@ -28,6 +30,7 @@ export default function TasksPage() {
   const [users, setUsers] = useState<any[]>([]); // Will map from workspace members
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -46,7 +49,12 @@ export default function TasksPage() {
     handleMoveTask,
     handleTaskUpdated,
     handleTaskRemoved,
-  } = useTaskCrudHandlers({ workspaceId, setTasks, tasks });
+  } = useTaskCrudHandlers({
+    workspaceId,
+    setTasks,
+    tasks,
+    onError: setError,
+  });
 
   const filteredTasks = useTaskSearch(tasks, search);
 
@@ -67,7 +75,23 @@ export default function TasksPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <Card className="w-full mb-6 rounded-2xl shadow-md p-4 sm:p-8 bg-card">
+        {error && (
+          <Alert className="w-full mb-4 border-destructive/30 bg-destructive/5 dark:bg-destructive/10 backdrop-blur-sm">
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-destructive dark:text-destructive-foreground">
+                {error}
+              </span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-2 hover:opacity-70 text-destructive dark:text-destructive-foreground"
+              >
+                <X size={16} />
+              </button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="w-full mb-6 rounded-2xl shadow-lg border-border/20 bg-card/98 backdrop-blur-sm p-4 sm:p-8 dark:border-border/10 dark:bg-card/95">
           <CardHeader className="flex flex-col items-center">
             <CardTitle className="text-3xl font-bold text-foreground mb-2 text-center">
               Task Management Board
@@ -80,7 +104,7 @@ export default function TasksPage() {
                 placeholder="Search tasks..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="max-w-xs rounded-lg"
+                className="max-w-xs rounded-lg border-border/20 bg-background/60 dark:border-border/10 dark:bg-background/40"
               />
             </div>
           </CardHeader>

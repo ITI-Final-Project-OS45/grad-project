@@ -62,7 +62,7 @@ export const KanbanTaskCardWithDrag: React.FC<KanbanTaskCardWithDragProps> = ({
   return (
     <div
       ref={ref}
-      className="cursor-grab bg-white shadow rounded-xl p-4 mb-3 hover:shadow-lg transition-shadow duration-200 flex flex-col"
+      className="group cursor-grab bg-gradient-to-br from-card/95 to-card/98 dark:from-card/90 dark:to-card/95 shadow-md dark:shadow-lg dark:shadow-black/20 hover:shadow-xl hover:shadow-primary/15 dark:hover:shadow-primary/10 rounded-2xl border border-border/60 dark:border-border/80 hover:border-primary/50 dark:hover:border-primary/70 transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 backdrop-blur-sm p-4 mb-3"
       style={{
         minHeight: "unset",
         height: "auto",

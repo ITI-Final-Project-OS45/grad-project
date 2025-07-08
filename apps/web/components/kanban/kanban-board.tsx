@@ -63,7 +63,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     closeEditModal,
     closePreviewModal,
     closeAddModal,
+    closeAllModals,
   } = useModalState();
+
+  // Clear modals when switching view modes
+  const handleViewModeChange = (mode: "kanban" | "list") => {
+    closeAllModals();
+    setViewMode(mode);
+  };
 
   // Task event handlers
   const handleTaskUpdated = (updatedTask: Task) => {
@@ -94,13 +101,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       <div className="flex items-center justify-end mb-4 gap-2">
         <Button
           variant={viewMode === "kanban" ? "default" : "outline"}
-          onClick={() => setViewMode("kanban")}
+          onClick={() => handleViewModeChange("kanban")}
         >
           Kanban View
         </Button>
         <Button
           variant={viewMode === "list" ? "default" : "outline"}
-          onClick={() => setViewMode("list")}
+          onClick={() => handleViewModeChange("list")}
         >
           List View
         </Button>
@@ -108,7 +115,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       {viewMode === "kanban" ? (
         <div className="overflow-x-auto w-full min-w-0">
-          <div className="flex flex-col sm:flex-row flex-nowrap min-w-0 gap-4 justify-center bg-background p-2 sm:p-6">
+          <div className="flex flex-col sm:flex-row flex-nowrap min-w-0 gap-4 justify-center bg-background dark:bg-background-dark p-2 sm:p-6">
             {columns.map((col) => (
               <KanbanColumnComponent
                 key={col.status}
@@ -121,71 +128,70 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 onMoveTask={onMoveTask}
                 onTaskUpdated={handleTaskUpdated}
                 onTaskRemoved={handleTaskRemoved}
-                onPreview={openPreviewModal}
+                onPreview={(task) => openPreviewModal(task)}
                 moveTask={moveTask}
+                className="bg-card dark:bg-card-dark border border-border dark:border-border-dark rounded-md shadow-md"
               />
             ))}
           </div>
         </div>
       ) : (
-        <>
-          <TaskListView
-            tasks={tasks}
-            users={users as TaskListKanbanUser[]}
-            onEdit={openEditModal}
-            onPreview={openPreviewModal}
-            onDelete={(task) => {
-              if (onTaskRemoved) onTaskRemoved(task._id);
-            }}
-            renderSectionAction={(status) => (
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-2"
-                onClick={() => openAddModal(status)}
-                aria-label={`Add to ${status}`}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            )}
-          />
-
-          {/* Modals */}
-          {editTask && (
-            <EditTaskModal
-              task={editTask}
-              users={users}
-              open={!!editTask}
-              onClose={closeEditModal}
-              onUpdate={(updatedTask) => {
-                if (onTaskUpdated) {
-                  onTaskUpdated({ ...editTask, ...updatedTask });
-                }
-                closeEditModal();
-              }}
-            />
+        <TaskListView
+          tasks={tasks}
+          users={users as TaskListKanbanUser[]}
+          onEdit={openEditModal}
+          onPreview={openPreviewModal}
+          onDelete={(task) => {
+            if (onTaskRemoved) onTaskRemoved(task._id);
+          }}
+          renderSectionAction={(status) => (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2"
+              onClick={() => openAddModal(status)}
+              aria-label={`Add to ${status}`}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
           )}
+        />
+      )}
 
-          <TaskDetailModal
-            task={previewTask}
-            users={users}
-            open={!!previewTask}
-            onClose={closePreviewModal}
-          />
+      {/* Modals - Move outside view mode condition so they work in both views */}
+      {editTask && (
+        <EditTaskModal
+          task={editTask}
+          users={users}
+          open={!!editTask}
+          onClose={closeEditModal}
+          onUpdate={(updatedTask) => {
+            if (onTaskUpdated) {
+              onTaskUpdated({ ...editTask, ...updatedTask });
+            }
+            closeEditModal();
+          }}
+        />
+      )}
 
-          {addModalStatus && (
-            <AddTaskModal
-              defaultStatus={addModalStatus}
-              open={!!addModalStatus}
-              onClose={closeAddModal}
-              onAdd={handleAddTask}
-              users={users}
-              position={
-                addModalStatus ? groupedKanbanTasks[addModalStatus].length : 0
-              }
-            />
-          )}
-        </>
+      <TaskDetailModal
+        task={previewTask}
+        users={users}
+        open={!!previewTask}
+        onClose={closePreviewModal}
+      />
+
+      {addModalStatus && (
+        <AddTaskModal
+          defaultStatus={addModalStatus}
+          open={!!addModalStatus}
+          onClose={closeAddModal}
+          onAdd={handleAddTask}
+          users={users}
+          position={
+            addModalStatus ? groupedKanbanTasks[addModalStatus].length : 0
+          }
+        />
       )}
     </DndProvider>
   );

@@ -69,7 +69,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md w-full p-4 sm:p-6 rounded-2xl overflow-y-auto max-h-[90vh]">
+      <DialogContent
+        className="max-w-md w-full p-4 sm:p-6 rounded-2xl overflow-y-auto max-h-[90vh] bg-card/95 dark:bg-card/98 border border-border/20 dark:border-border/10 backdrop-blur-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogTitle className="mb-2 text-xl font-bold">Edit Task</DialogTitle>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <Input
@@ -102,7 +105,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               ).length > 10
                 ? "max-h-40 overflow-y-auto"
                 : ""
-            } rounded-lg border border-input bg-input p-2 mb-2`}
+            } rounded-lg border border-border dark:border-border/20 bg-card/50 dark:bg-card/30 p-2 mb-2`}
           >
             {users
               .filter((user) =>
@@ -153,13 +156,28 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
           />
           <label className="text-sm font-medium">Priority</label>
           <select
-            className="border border-input bg-input text-foreground p-2 mb-2 w-full rounded-lg"
+            className="border border-border dark:border-border/30 bg-background dark:bg-card text-foreground p-2 mb-2 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
             value={priority}
             onChange={(e) => setPriority(e.target.value as TaskPriority)}
           >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option
+              value="low"
+              className="bg-background dark:bg-card text-foreground"
+            >
+              Low
+            </option>
+            <option
+              value="medium"
+              className="bg-background dark:bg-card text-foreground"
+            >
+              Medium
+            </option>
+            <option
+              value="high"
+              className="bg-background dark:bg-card text-foreground"
+            >
+              High
+            </option>
           </select>
           <div className="flex justify-end gap-2 mt-2">
             <DialogClose asChild>

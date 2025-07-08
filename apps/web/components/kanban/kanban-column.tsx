@@ -31,6 +31,7 @@ type KanbanColumnComponentProps = {
     hoverIndex: number,
     columnStatus: TaskStatus
   ) => void;
+  className?: string;
 };
 
 export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
@@ -45,6 +46,7 @@ export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   onTaskRemoved,
   onPreview,
   moveTask,
+  className,
 }) => {
   const divRef = useRef<HTMLDivElement | null>(null);
 
@@ -67,7 +69,7 @@ export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   return (
     <Card
       ref={combinedRef}
-      className="p-4 sm:p-6 mb-4 w-full sm:w-[350px] flex flex-col gap-4 bg-background border border-border shadow-md rounded-2xl min-h-[400px]"
+      className={`p-4 sm:p-6 mb-4 w-full sm:w-[350px] flex flex-col gap-4 bg-background border border-border shadow-md rounded-2xl min-h-[400px] ${className || ""}`}
     >
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <span className="text-lg font-bold text-foreground truncate">

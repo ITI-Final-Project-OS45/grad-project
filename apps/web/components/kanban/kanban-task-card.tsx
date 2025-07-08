@@ -60,9 +60,10 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
     if (deleting) return; // Prevent double delete
     setDeleting(true);
     try {
-      await TaskService.deleteTask(task._id);
+      // Just call the parent's remove handler instead of directly calling the API
+      // The parent will handle the API call and error handling
       if (onTaskRemoved) {
-        onTaskRemoved(task._id); // Notify the parent to remove the task from the UI
+        onTaskRemoved(task._id);
       }
     } catch (error) {
       console.error("Failed to delete task:", error);
@@ -92,7 +93,7 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
       >
         <Card
           ref={combinedRef}
-          className="group relative overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-grab ring-1 ring-border hover:ring-primary rounded-xl p-4 sm:p-6 mb-4 w-full h-full flex flex-col justify-between shrink-0 bg-card"
+          className="group relative overflow-hidden cursor-pointer rounded-xl p-4 w-full h-full flex flex-col justify-between shrink-0 bg-transparent border-0 shadow-none hover:bg-transparent"
           onClick={() => onPreview && onPreview()}
         >
           <div className="relative flex flex-col gap-4 flex-1 min-h-0">

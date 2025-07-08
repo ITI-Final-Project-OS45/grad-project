@@ -37,7 +37,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-hidden p-6 rounded-2xl flex flex-col">
+      <DialogContent
+        className="max-w-2xl w-full max-h-[90vh] overflow-hidden p-6 rounded-2xl flex flex-col bg-card/95 dark:bg-card/98 border border-border/20 dark:border-border/10 backdrop-blur-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogTitle className="mb-4 text-xl font-bold shrink-0">
           {task.title}
         </DialogTitle>
