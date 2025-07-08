@@ -1,10 +1,23 @@
 export interface WorkspaceStats {
   totalTasks: number;
   completedTasks: number;
+  inProgressTasks?: number;
+  todoTasks?: number;
   totalDesigns: number;
   totalMembers: number;
   totalReleases: number;
   activeReleases: number;
+  completedReleases?: number;
+  highPriorityTasks?: number;
+  mediumPriorityTasks?: number;
+  lowPriorityTasks?: number;
+  overdueTasks?: number;
+  dueSoonTasks?: number;
+  designTypes?: Record<string, number>;
+  memberRoles?: Record<string, number>;
+  taskCompletionRate?: number;
+  releaseCompletionRate?: number;
+  workspaceActivity?: number;
 }
 
 export interface FeatureCard {

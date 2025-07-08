@@ -29,73 +29,62 @@ export class WorkspaceMemberService {
     membernameOrEmail: string,
     role: UserRole,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
-    try {
-      this.isValidId(workspaceId);
-      this.isValidUserRole(role);
+    this.isValidId(workspaceId);
+    this.isValidUserRole(role);
 
-      // Check if user exists
-      const user = await this.getUser(membernameOrEmail);
+    // Check if user exists
+    const user = await this.getUser(membernameOrEmail);
 
-      // Check if user is already a member
-      const workspace = await this.getWorkspace(workspaceId);
-      const isMember = workspace.members.some(
-        (m) => m.userId.toString() === (user._id as Types.ObjectId).toString(),
+    // Check if user is already a member
+    const workspace = await this.getWorkspace(workspaceId);
+    const isMember = workspace.members.some(
+      (m) => m.userId.toString() === (user._id as Types.ObjectId).toString(),
+    );
+    if (isMember) {
+      throw new BadRequestException(
+        'User is already a member of this workspace',
       );
-      if (isMember) {
-        throw new BadRequestException(
-          'User is already a member of this workspace',
-        );
-      }
+    }
 
-      // Add member to workspace
-      const addNewMember = await this.workspaceModel
-        .findByIdAndUpdate(
-          workspaceId,
-          {
-            $push: {
-              members: {
-                userId: user._id,
-                role,
-                joinedAt: new Date(),
-              },
+    // Add member to workspace
+    const addNewMember = await this.workspaceModel
+      .findByIdAndUpdate(
+        workspaceId,
+        {
+          $push: {
+            members: {
+              userId: user._id,
+              role,
+              joinedAt: new Date(),
             },
           },
-          { new: true },
-        )
-        .exec();
+        },
+        { new: true },
+      )
+      .exec();
 
-      if (!addNewMember) {
-        throw new InternalServerErrorException('Failed to add new member');
-      }
-
-      // Add workspaceId to user's workspaces array if not already present
-      await this.userModel
-        .updateOne(
-          { _id: user._id, workspaces: { $ne: workspaceId } },
-          { $push: { workspaces: workspaceId } },
-        )
-        .exec();
-
-      return {
-        success: true,
-        status: HttpStatus.ACCEPTED,
-        message: 'Member added successfully',
-        data: {
-          userId: user._id,
-          role,
-          joinedAt: new Date(),
-        } as WorkspaceMember,
-      };
-    } catch (error) {
-      console.error('Error in create method:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An unexpected error occurred');
+    if (!addNewMember) {
+      throw new InternalServerErrorException('Failed to add new member');
     }
+
+    // Add workspaceId to user's workspaces array if not already present
+    await this.userModel
+      .updateOne(
+        { _id: user._id, workspaces: { $ne: workspaceId } },
+        { $push: { workspaces: workspaceId } },
+      )
+      .exec();
+
+    return {
+      success: true,
+      status: HttpStatus.ACCEPTED,
+      message: 'Member added successfully',
+      data: {
+        userId: user._id,
+        role,
+        joinedAt: new Date(),
+      } as WorkspaceMember,
+    };
   }
 
   async updateMember(
@@ -103,183 +92,139 @@ export class WorkspaceMemberService {
     membernameOrEmail: string,
     newRole: UserRole,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
-    try {
-      this.isValidId(workspaceId);
-      this.isValidUserRole(newRole);
+    this.isValidId(workspaceId);
+    this.isValidUserRole(newRole);
 
-      // No need to check manager/member here; handled by guard
-      const user = await this.getUser(membernameOrEmail);
+    // No need to check manager/member here; handled by guard
+    const user = await this.getUser(membernameOrEmail);
 
-      const userId =
-        user._id instanceof Types.ObjectId
-          ? user._id
-          : new Types.ObjectId(user._id as string);
+    const userId =
+      user._id instanceof Types.ObjectId
+        ? user._id
+        : new Types.ObjectId(user._id as string);
 
-      const updatedUser = await this.workspaceModel
-        .findOneAndUpdate(
-          { _id: workspaceId },
-          {
-            $set: {
-              'members.$[elem].role': newRole,
-            },
+    const updatedUser = await this.workspaceModel
+      .findOneAndUpdate(
+        { _id: workspaceId },
+        {
+          $set: {
+            'members.$[elem].role': newRole,
           },
-          {
-            arrayFilters: [{ 'elem.userId': userId }],
-            new: true,
-          },
-        )
-        .exec();
+        },
+        {
+          arrayFilters: [{ 'elem.userId': userId }],
+          new: true,
+        },
+      )
+      .exec();
 
-      if (!updatedUser) {
-        throw new InternalServerErrorException('Failed to update the member');
-      }
-
-      return {
-        success: true,
-        status: HttpStatus.ACCEPTED,
-        message: 'Member role updated successfully',
-        data: {
-          userId: user._id,
-          role: newRole,
-          joinedAt: new Date(),
-        } as WorkspaceMember,
-      };
-    } catch (error) {
-      console.error('Error in create method:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An unexpected error occurred');
+    if (!updatedUser) {
+      throw new InternalServerErrorException('Failed to update the member');
     }
+
+    return {
+      success: true,
+      status: HttpStatus.ACCEPTED,
+      message: 'Member role updated successfully',
+      data: {
+        userId: user._id,
+        role: newRole,
+        joinedAt: new Date(),
+      } as WorkspaceMember,
+    };
   }
 
   async deleteMember(
     workspaceId: string,
     membernameOrEmail: string,
   ): Promise<ApiResponse<null, ApiError>> {
-    try {
-      this.isValidId(workspaceId);
+    this.isValidId(workspaceId);
 
-      // No need to check manager/member here; handled by guard
-      const user = await this.getUser(membernameOrEmail);
+    // No need to check manager/member here; handled by guard
+    const user = await this.getUser(membernameOrEmail);
 
-      const userId =
-        user._id instanceof Types.ObjectId
-          ? user._id
-          : new Types.ObjectId(user._id as string);
+    const userId =
+      user._id instanceof Types.ObjectId
+        ? user._id
+        : new Types.ObjectId(user._id as string);
 
-      // Remove member from workspace
-      const deletedUser = await this.workspaceModel
-        .updateOne(
-          { _id: workspaceId },
-          {
-            $pull: {
-              members: { userId: userId },
-            },
+    // Remove member from workspace
+    const deletedUser = await this.workspaceModel
+      .updateOne(
+        { _id: workspaceId },
+        {
+          $pull: {
+            members: { userId: userId },
           },
-        )
-        .exec();
+        },
+      )
+      .exec();
 
-      if (!deletedUser) {
-        throw new InternalServerErrorException('Failed to Delete the member');
-      }
-
-      // Remove workspaceId from user's workspaces array
-      await this.userModel
-        .updateOne({ _id: user._id }, { $pull: { workspaces: workspaceId } })
-        .exec();
-
-      return {
-        success: true,
-        status: HttpStatus.OK,
-        message: 'User deleted from the workspace successfully',
-        data: null,
-      };
-    } catch (error) {
-      console.error('Error in create method:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An unexpected error occurred');
+    if (!deletedUser) {
+      throw new InternalServerErrorException('Failed to Delete the member');
     }
+
+    // Remove workspaceId from user's workspaces array
+    await this.userModel
+      .updateOne({ _id: user._id }, { $pull: { workspaces: workspaceId } })
+      .exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'User deleted from the workspace successfully',
+      data: null,
+    };
   }
 
   async getAllWorkspaceMembers(
     workspaceId: string,
   ): Promise<ApiResponse<WorkspaceMember[], ApiError>> {
-    try {
-      this.isValidId(workspaceId);
+    this.isValidId(workspaceId);
 
-      // No need to check member here; handled by guard
-      const workspace = await this.workspaceModel
-        .findById(workspaceId)
-        .populate({
-          path: 'members.userId',
-          select: 'username displayName email',
-        })
-        .exec();
+    // No need to check member here; handled by guard
+    const workspace = await this.workspaceModel
+      .findById(workspaceId)
+      .populate({
+        path: 'members.userId',
+        select: 'username displayName email',
+      })
+      .exec();
 
-      if (!workspace) {
-        throw new NotFoundException('Workspace not found');
-      }
-
-      return {
-        success: true,
-        status: HttpStatus.OK,
-        message: 'Members found successfully',
-        data: workspace.members as WorkspaceMember[],
-      };
-    } catch (error) {
-      console.error('Error in getAllWorkspaceMembers method:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An unexpected error occurred');
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
     }
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'Members found successfully',
+      data: workspace.members as WorkspaceMember[],
+    };
   }
 
   async getOneMemberByWorkspace(
     workspaceId: string,
     memberId: string,
   ): Promise<ApiResponse<WorkspaceMember, ApiError>> {
-    try {
-      this.isValidId(workspaceId);
+    this.isValidId(workspaceId);
 
-      const workspace = await this.getWorkspace(workspaceId);
+    const workspace = await this.getWorkspace(workspaceId);
 
-      const member = workspace.members.find(
-        (m) => m.userId.toString() === memberId,
-      );
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === memberId,
+    );
 
-      if (!member) {
-        throw new NotFoundException('Member not found in workspace');
-      }
-
-      return {
-        success: true,
-        status: HttpStatus.OK,
-        message: 'Member found successfully',
-        data: member,
-      };
-    } catch (error) {
-      console.error('Error in create method:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An unexpected error occurred');
+    if (!member) {
+      throw new NotFoundException('Member not found in workspace');
     }
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'Member found successfully',
+      data: member,
+    };
   }
 
   private isValidUserRole(role: string): void {

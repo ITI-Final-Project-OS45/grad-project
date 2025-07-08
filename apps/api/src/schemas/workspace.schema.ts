@@ -36,5 +36,11 @@ export class Workspace {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Release' }], default: [] })
   releases!: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Task' }], default: [] })
+  tasks!: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'DesignAsset' }], default: [] })
+  designs!: Types.ObjectId[];
 }
 export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);

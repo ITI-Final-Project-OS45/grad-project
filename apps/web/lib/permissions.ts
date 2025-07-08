@@ -90,33 +90,93 @@ export const WorkspacePermissions = {
   // Bug management permissions (based on bugs.service.ts validation methods)
   canCreateBug: (context: PermissionContext): boolean => {
     // QA, Manager, and Developer can create bugs
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   canUpdateBug: (context: PermissionContext): boolean => {
     // QA, Manager, and Developer can update bugs
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   canDeleteBug: (context: PermissionContext): boolean => {
     // Only QA and Manager can delete bugs
-    return [UserRole.QA, UserRole.Manager].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   // Hotfix management permissions (based on hotfixes.service.ts validation methods)
   canCreateHotfix: (context: PermissionContext): boolean => {
     // QA, Manager, and Developer can create hotfixes
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   canUpdateHotfix: (context: PermissionContext): boolean => {
     // QA, Manager, and Developer can update hotfixes
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   canDeleteHotfix: (context: PermissionContext): boolean => {
     // Only QA and Manager can delete hotfixes
-    return [UserRole.QA, UserRole.Manager].includes(context.currentUserRole as UserRole);
+    return [UserRole.QA, UserRole.Manager].includes(
+      context.currentUserRole as UserRole
+    );
+  },
+
+  // Task management permissions
+  canCreateTask: (context: PermissionContext): boolean => {
+    // Only managers can create tasks
+    return context.currentUserRole === UserRole.Manager;
+  },
+
+  canUpdateTask: (
+    context: PermissionContext,
+    taskAssignedUsers?: string[]
+  ): boolean => {
+    // Managers can update any task, users can only update assigned tasks
+    if (context.currentUserRole === UserRole.Manager) {
+      return true;
+    }
+    return !!(
+      context.currentUserId &&
+      taskAssignedUsers?.includes(context.currentUserId)
+    );
+  },
+
+  canDeleteTask: (context: PermissionContext): boolean => {
+    // Only managers can delete tasks
+    return context.currentUserRole === UserRole.Manager;
+  },
+
+  canViewTasks: (context: PermissionContext): boolean => {
+    // Any workspace member can view tasks (filtered by assignment for non-managers)
+    return !!context.currentUserRole;
+  },
+
+  canCreateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(
+      context.currentUserRole as UserRole
+    );
+  },
+
+  canUpdateDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(
+      context.currentUserRole as UserRole
+    );
+  },
+
+  canDeleteDesign: (context: PermissionContext): boolean => {
+    return [UserRole.Manager, UserRole.Designer].includes(
+      context.currentUserRole as UserRole
+    );
   },
 
   // General utility functions
@@ -157,7 +217,8 @@ export const useWorkspacePermissions = (
     // Invite permissions
     canCreateInvite: WorkspacePermissions.canCreateInvite(context),
     canDeleteInvite: WorkspacePermissions.canDeleteInvite(context),
-    canViewWorkspaceInvites: WorkspacePermissions.canViewWorkspaceInvites(context),
+    canViewWorkspaceInvites:
+      WorkspacePermissions.canViewWorkspaceInvites(context),
 
     // Workspace permissions
     canUpdateWorkspace: WorkspacePermissions.canUpdateWorkspace(context),
@@ -180,6 +241,17 @@ export const useWorkspacePermissions = (
     canUpdateHotfix: WorkspacePermissions.canUpdateHotfix(context),
     canDeleteHotfix: WorkspacePermissions.canDeleteHotfix(context),
 
+    // Task permissions
+    canCreateTask: WorkspacePermissions.canCreateTask(context),
+    canUpdateTask: WorkspacePermissions.canUpdateTask(context),
+    canDeleteTask: WorkspacePermissions.canDeleteTask(context),
+    canViewTasks: WorkspacePermissions.canViewTasks(context),
+
+    // Design permissions
+    canCreateDesign: WorkspacePermissions.canCreateDesign(context),
+    canUpdateDesign: WorkspacePermissions.canUpdateDesign(context),
+    canDeleteDesign: WorkspacePermissions.canDeleteDesign(context),
+
     // Utility
     isManager: WorkspacePermissions.isManager(currentUserRole),
     hasAnyRole: WorkspacePermissions.hasAnyRole(currentUserRole),
@@ -189,5 +261,9 @@ export const useWorkspacePermissions = (
       ...context,
       targetUserId,
     }),
+
+    // Utility function for task-specific permissions
+    canUpdateSpecificTask: (taskAssignedUsers?: string[]) =>
+      WorkspacePermissions.canUpdateTask(context, taskAssignedUsers),
   };
 };

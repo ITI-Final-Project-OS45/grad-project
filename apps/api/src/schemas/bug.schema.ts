@@ -32,7 +32,7 @@ export class Bug {
   reportedBy!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  assignedTo?: Types.ObjectId;
+  assignedTo!: Types.ObjectId;
 
   @Prop()
   stepsToReproduce?: string;

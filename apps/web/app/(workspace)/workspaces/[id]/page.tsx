@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Palette, Rocket } from "lucide-react";
+import { CheckSquare, FileText, Palette, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspaceById } from "@/hooks/use-workspace";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
@@ -26,18 +26,16 @@ const featureCards: FeatureCard[] = [
     borderColor: "border-blue-200/50 dark:border-blue-800/50",
     features: ["Markdown Editor", "Version Control", "PDF Export", "Team Collaboration"],
   },
-  // TODO: Uncomment when tasks feature is ready
-  // {
-  //   title: "Task Management",
-  //   description: "Organize tasks and track progress with intuitive workflow management",
-  //   icon: CheckSquare,
-  //   href: "/tasks",
-  //   color: "text-emerald-600 dark:text-emerald-400",
-  //   bgColor: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-950/30",
-  //   borderColor: "border-emerald-200/50 dark:border-emerald-800/50",
-  //   features: ["Kanban Board", "Task Assignment", "Due Dates", "Priority Management"],
-  // },
-  // TODO: Uncomment when designs feature is ready
+  {
+    title: "Task Management",
+    description: "Organize tasks and track progress with intuitive workflow management",
+    icon: CheckSquare,
+    href: "/tasks",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/30 dark:to-green-950/30",
+    borderColor: "border-emerald-200/50 dark:border-emerald-800/50",
+    features: ["Kanban Board", "Task Assignment", "Due Dates", "Priority Management"],
+  },
   {
     title: "Design Assets",
     description: "Store and collaborate on design files with version control",
@@ -68,18 +66,100 @@ export default function WorkspacePage() {
   const { data: workspace, isLoading: workspaceLoading, error: workspaceError } = useWorkspaceById(workspaceId);
 
   const stats: WorkspaceStatsType = useMemo(() => {
-    const releases = workspace?.releases || [];
+    if (!workspace)
+      return {
+        totalTasks: 0,
+        completedTasks: 0,
+        totalDesigns: 0,
+        totalMembers: 0,
+        totalReleases: 0,
+        activeReleases: 0,
+      };
+
+    // Debug logging to see what's in the workspace
+    console.log("🔍 Workspace data:", workspace);
+    console.log("🎨 Designs array:", workspace.designs);
+    console.log("📋 Tasks array:", workspace.tasks);
+    console.log("🚀 Releases array:", workspace.releases);
+
+    const releases = workspace.releases || [];
+    const tasks = workspace.tasks || [];
+    const designs = workspace.designs || [];
+    const members = workspace.members || [];
+
+    console.log("🔢 Designs length:", designs.length);
+    console.log("🔢 Tasks length:", tasks.length);
+
+    // Enhanced task analytics
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((task) => task.status === "done").length;
+    const inProgressTasks = tasks.filter((task) => task.status === "in-progress").length;
+    const todoTasks = tasks.filter((task) => task.status === "todo").length;
+
+    // Priority breakdown
+    const highPriorityTasks = tasks.filter((task) => task.priority === "high").length;
+    const mediumPriorityTasks = tasks.filter((task) => task.priority === "medium").length;
+    const lowPriorityTasks = tasks.filter((task) => task.priority === "low").length;
+
+    // Task due date analytics
+    const now = new Date();
+    const overdueTasks = tasks.filter(
+      (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== "done"
+    ).length;
+    const dueSoonTasks = tasks.filter((task) => {
+      if (!task.dueDate || task.status === "done") return false;
+      const dueDate = new Date(task.dueDate);
+      const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+      return daysDiff <= 7 && daysDiff >= 0;
+    }).length;
+
+    // Release analytics
     const activeReleases = releases.filter((release) => !release.deployedDate).length;
+    const completedReleases = releases.filter((release) => release.deployedDate).length;
+
+    // Design analytics
+    const totalDesigns = designs.length;
+    const designTypes = designs.reduce(
+      (acc, design) => {
+        acc[design.type] = (acc[design.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    // Member role analytics
+    const memberRoles = members.reduce(
+      (acc, member) => {
+        acc[member.role] = (acc[member.role] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
     return {
-      // TODO: Replace with actual data when available
-      totalDesigns: 0,
-      completedTasks: 0,
-      totalTasks: 0,
-      totalMembers: workspace?.members?.length ?? 0,
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      todoTasks,
+      totalDesigns,
+      totalMembers: members.length,
       totalReleases: releases.length,
       activeReleases,
+      completedReleases,
+      highPriorityTasks,
+      mediumPriorityTasks,
+      lowPriorityTasks,
+      overdueTasks,
+      dueSoonTasks,
+      designTypes,
+      memberRoles,
+      // Calculated metrics
+      taskCompletionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      releaseCompletionRate: releases.length > 0 ? Math.round((completedReleases / releases.length) * 100) : 0,
+      workspaceActivity: totalTasks + totalDesigns + releases.length, // Overall activity score
     };
-  }, [workspace?.members, workspace?.releases]);
+  }, [workspace]);
+
   const handleFeatureClick = (href: string) => {
     router.push(`/workspaces/${workspaceId}${href}`);
   };
@@ -102,36 +182,14 @@ export default function WorkspacePage() {
     );
   }
 
-  const isDataLoading = workspaceLoading;
-  const hasDataError = workspaceError;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <WorkspaceHeader
-        workspace={workspace}
-        onMembersClick={handleMembersClick}
-      />
+      <WorkspaceHeader workspace={workspace} onMembersClick={handleMembersClick} />
 
       <main className="container mx-auto px-6 py-8 max-w-6xl space-y-8">
-        <WorkspaceStats stats={stats} isLoading={isDataLoading} />
+        <WorkspaceStats stats={stats} isLoading={workspaceLoading} />
 
-        <WorkspaceProgress stats={stats} isLoading={isDataLoading} />
-
-        {hasDataError && (
-          <div className="rounded-lg border border-destructive/20 bg-gradient-to-r from-destructive/5 to-red-50/50 dark:to-red-950/20 p-4">
-            <div className="flex gap-3">
-              <div className="w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-destructive text-xs font-medium">!</span>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground mb-1">Unable to load some data</h4>
-                <p className="text-sm text-muted-foreground">
-                  {workspaceError && `Workspace: ${(workspaceError as Error).message}`}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <WorkspaceProgress stats={stats} isLoading={workspaceLoading} />
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -162,9 +220,9 @@ export default function WorkspacePage() {
             ))}
           </div>
         </div>
-        {/*  // TODO: Replace with handleFeatureClick("/tasks") when ready */}
+
         <WorkspaceQuickActions
-          onCreateTask={() => alert("Task management feature is coming soon!")}
+          onCreateTask={() => handleFeatureClick("/tasks")}
           onEditPRD={() => handleFeatureClick("/prd")}
           onUploadDesign={() => handleFeatureClick("/designs")}
         />

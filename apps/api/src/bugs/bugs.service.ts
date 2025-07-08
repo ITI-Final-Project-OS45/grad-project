@@ -149,10 +149,11 @@ export class BugsService {
       throw new ReleaseNotFoundException();
     }
 
-    // Check workspace permissions - only QA, Manager, and Developer can update bugs
+    // Check workspace permissions - only QA, Manager, and assigned users can update bugs
     await this.validateWorkspacePermissionForUpdate(
       release.workspaceId.toString(),
       userId,
+      bugId,
     );
 
     // Validate assignedTo user exists (if provided)
@@ -245,14 +246,16 @@ export class BugsService {
   }
 
   /**
-   * Validates if the user has QA, Manager, or Developer role in the workspace for update operations
+   * Validates if the user has QA, Manager role or is assigned to the bug for update operations
    * @param workspaceId - The workspace ID to check permissions for
    * @param userId - The user ID to validate permissions for
+   * @param bugId - The bug ID to check if user is assigned to it
    * @throws UnauthorizedActionException if user doesn't have required permissions
    */
   private async validateWorkspacePermissionForUpdate(
     workspaceId: string,
     userId: string,
+    bugId?: string,
   ): Promise<void> {
     const workspace = await this.workspaceModel.findById(workspaceId).exec();
     if (!workspace) {
@@ -267,14 +270,25 @@ export class BugsService {
       throw new UnauthorizedActionException('access this workspace');
     }
 
-    // QA, Manager, and Developer roles can update bugs
-    if (
-      userMember.role !== UserRole.QA &&
-      userMember.role !== UserRole.Manager &&
-      userMember.role !== UserRole.Developer
-    ) {
+    // Check if user has QA or Manager role
+    const hasRequiredRole =
+      userMember.role === UserRole.QA || userMember.role === UserRole.Manager;
+
+    // Check if user is assigned to the bug (if bugId is provided)
+    let isAssignedUser = false;
+    if (bugId) {
+      const bug = await this.bugModel.findById(bugId).exec();
+      isAssignedUser = !!(
+        bug &&
+        bug.assignedTo &&
+        bug.assignedTo.toString() === userId
+      );
+    }
+
+    // QA, Manager, and assigned user can update bugs
+    if (!hasRequiredRole && !isAssignedUser) {
       throw new UnauthorizedActionException(
-        'perform this action. Only QA, Manager, and Developer roles are allowed',
+        'perform this action. Only QA, Manager, and assigned users are allowed',
       );
     }
   }

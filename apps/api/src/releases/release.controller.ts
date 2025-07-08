@@ -1,4 +1,10 @@
-import { ApiError, ApiResponse, CreateReleaseDto, QAStatus } from '@repo/types';
+import {
+  ApiError,
+  ApiResponse,
+  CreateReleaseDto,
+  UpdateReleaseDto,
+  QAStatus,
+} from '@repo/types';
 import {
   Controller,
   Post,
@@ -46,7 +52,7 @@ export class ReleaseController {
   @HttpCode(HttpStatus.OK)
   async updateRelease(
     @Param('id') id: string,
-    @Body() updateReleaseDto: CreateReleaseDto,
+    @Body() updateReleaseDto: UpdateReleaseDto,
     @Req() req: RequestWithUser,
   ): Promise<ApiResponse<Release, ApiError>> {
     return await this.releasesService.update(id, updateReleaseDto, req.userId);

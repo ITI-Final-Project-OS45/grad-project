@@ -1,15 +1,21 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import {
-  KanbanColumn,
-  Task,
-  TaskStatus,
-  TaskPriority,
-} from "../../../../../../../packages/types/src/dtos/tasks";
-import { User, UserService } from "@/services/user.service";
+import { motion } from "framer-motion";
+import { KanbanColumn, Task, TaskStatus, TaskPriority } from "@repo/types";
 import { TaskService } from "@/services/task.service";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
+import {
+  WorkspaceMemberService,
+  WorkspaceMember,
+} from "@/services/workspace-member.service";
+import { useTaskSearch } from "@/hooks/use-task-search";
+import { useTaskCrudHandlers } from "@/hooks/use-task-crud-handlers";
+import { mapWorkspaceMembersToUsers } from "@/hooks/map-workspace-members-to-users";
 
 const columns: KanbanColumn[] = [
   { status: "todo", title: "To Do" },
@@ -20,64 +26,37 @@ const columns: KanbanColumn[] = [
 export default function TasksPage() {
   const params = useParams();
   const workspaceId = params.id as string;
-
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<any[]>([]); // Will map from workspace members
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     Promise.all([
       TaskService.getTasks(workspaceId),
-      UserService.getAllUsers(),
-    ]).then(([tasks, users]) => {
-      setTasks(tasks);
-      setUsers(users);
+      WorkspaceMemberService.getAllMembers(workspaceId),
+    ]).then(([tasksResponse, membersResponse]) => {
+      setTasks(tasksResponse.data ?? []);
+      setUsers(mapWorkspaceMembersToUsers(membersResponse.data ?? []));
       setLoading(false);
     });
   }, [workspaceId]);
 
-  const handleAddTask = async (task: {
-    title: string;
-    description?: string;
-    assignedTo: string[];
-    status: TaskStatus;
-    dueDate?: string;
-    priority?: TaskPriority;
-  }) => {
-    let dueDate = task.dueDate;
-    if (dueDate) {
-      dueDate = new Date(dueDate).toISOString();
-    }
-    const newTask = await TaskService.createTask({
-      ...task,
-      dueDate,
-      workspaceId, // Ensure workspaceId is passed here
-    });
-    setTasks((prev) => [newTask, ...prev]); // Add the new task at the beginning
-  };
+  const {
+    handleAddTask,
+    handleMoveTask,
+    handleTaskUpdated,
+    handleTaskRemoved,
+  } = useTaskCrudHandlers({
+    workspaceId,
+    setTasks,
+    tasks,
+    onError: setError,
+  });
 
-  const handleMoveTask = async (taskId: string, newStatus: TaskStatus) => {
-    const task = tasks.find((t) => t._id === taskId);
-    if (!task || task.status === newStatus) return;
-    const updatedTask = await TaskService.updateTask(taskId, {
-      status: newStatus,
-    });
-    setTasks((prev) => {
-      const filteredTasks = prev.filter((t) => t._id !== taskId);
-      return [{ ...task, status: newStatus }, ...filteredTasks]; // Move the task to the beginning
-    });
-  };
-
-  const handleTaskUpdated = (updatedTask: Task) => {
-    setTasks((prev) =>
-      prev.map((task) => (task._id === updatedTask._id ? updatedTask : task))
-    );
-  };
-
-  const handleTaskRemoved = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task._id !== taskId));
-  };
+  const filteredTasks = useTaskSearch(tasks, search);
 
   if (loading)
     return (
@@ -89,19 +68,50 @@ export default function TasksPage() {
     );
 
   return (
-    <main className="flex justify-center items-center min-h-[calc(100vh-64px)] bg-background">
-      <div className="flex flex-col items-center bg-card shadow rounded-lg p-6 overflow-x-auto">
-        <div className="flex flex-col items-center mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            Task Management Board
-          </h1>
-          <p className="text-muted-foreground text-center">
-            Manage tasks for your workspace efficiently.
-          </p>
-        </div>
+    <main className="flex justify-center items-center min-h-[calc(100vh-64px)] bg-background px-2 sm:px-0">
+      <motion.div
+        className="flex flex-col items-center w-full max-w-6xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        {error && (
+          <Alert className="w-full mb-4 border-destructive/30 bg-destructive/5 dark:bg-destructive/10 backdrop-blur-sm">
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-destructive dark:text-destructive-foreground">
+                {error}
+              </span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-2 hover:opacity-70 text-destructive dark:text-destructive-foreground"
+              >
+                <X size={16} />
+              </button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="w-full mb-6 rounded-2xl shadow-lg border-border/20 bg-card/98 backdrop-blur-sm p-4 sm:p-8 dark:border-border/10 dark:bg-card/95">
+          <CardHeader className="flex flex-col items-center">
+            <CardTitle className="text-3xl font-bold text-foreground mb-2 text-center">
+              Task Management Board
+            </CardTitle>
+            <p className="text-muted-foreground text-center mb-4">
+              Manage tasks for your workspace efficiently.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center items-center">
+              <Input
+                placeholder="Search tasks..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-xs rounded-lg border-border/20 bg-background/60 dark:border-border/10 dark:bg-background/40"
+              />
+            </div>
+          </CardHeader>
+        </Card>
         <KanbanBoard
           columns={columns}
-          tasks={tasks}
+          tasks={filteredTasks}
           users={users}
           onAddTask={handleAddTask}
           onMoveTask={handleMoveTask}
@@ -109,7 +119,7 @@ export default function TasksPage() {
           onTaskUpdated={handleTaskUpdated}
           onTaskRemoved={handleTaskRemoved}
         />
-      </div>
+      </motion.div>
     </main>
   );
 }
