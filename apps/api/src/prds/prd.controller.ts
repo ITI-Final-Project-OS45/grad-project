@@ -29,7 +29,6 @@ export class PrdController {
     @Body() createPrdDto: CreatePrdDto,
     @Req() req: RequestWithUser,
   ) {
-    // Ensure workspaceId is set in DTO
     return await this.prdService.create(
       { ...createPrdDto, workspaceId },
       req.userId,
@@ -62,7 +61,6 @@ export class PrdController {
     @Param('workspaceId') workspaceId: string,
     @Req() req: RequestWithUser,
   ) {
-    // Delete the latest PRD for the workspace
     return await this.prdService.deleteByWorkspace(workspaceId, req.userId);
   }
 }

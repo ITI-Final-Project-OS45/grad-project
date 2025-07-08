@@ -70,45 +70,34 @@ export class PrdService {
     updatePrdDto: { title: string; content: string },
     userId: string,
   ) {
-    // Find the latest PRD for the workspace
-    const prd = await this.prdModel
-      .findOne({ workspaceId })
-      .sort({ createdAt: -1 })
-      .exec();
+    const prd = await this.prdModel.findOne({ workspaceId }).exec();
     if (!prd) throw new Error('PRD not found');
-    // Validate workspace exists
     const workspace = await this.workspaceModel.findById(workspaceId).exec();
     if (!workspace) throw new Error('Workspace not found');
-    // Validate user is a manager in the workspace
     const member = workspace.members.find(
       (m: any) => m.userId.toString() === userId,
     );
     if (!member || member.role !== UserRole.Manager) {
       throw new Error('Only managers can update PRDs');
     }
-    // Only update title and content, leave versions array unchanged
     prd.title = updatePrdDto.title;
     prd.content = updatePrdDto.content;
     return await prd.save();
   }
   async deleteByWorkspace(workspaceId: string, userId: string) {
-    // Find the latest PRD for the workspace
     const prd = await this.prdModel
       .findOne({ workspaceId })
       .sort({ createdAt: -1 })
       .exec();
     if (!prd) throw new Error('PRD not found');
-    // Validate workspace exists
     const workspace = await this.workspaceModel.findById(workspaceId).exec();
     if (!workspace) throw new Error('Workspace not found');
-    // Validate user is a manager in the workspace
     const member = workspace.members.find(
       (m: any) => m.userId.toString() === userId,
     );
     if (!member || member.role !== UserRole.Manager) {
       throw new Error('Only managers can delete PRDs');
     }
-    // Delete the PRD document (including all versions)
     await this.prdModel.deleteOne({ _id: prd._id });
     return { success: true };
   }
