@@ -19,6 +19,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { BugsModule } from './bugs/bugs.module';
 import { HotfixesModule } from './hotfixes/hotfixes.module';
 import { InvitesModule } from './invites/invites.module';
+import { PrdsModule } from './prds/prds.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { InvitesModule } from './invites/invites.module';
     BugsModule,
     HotfixesModule,
     InvitesModule,
+    PrdsModule,
   ],
   controllers: [AppController],
   providers: [
