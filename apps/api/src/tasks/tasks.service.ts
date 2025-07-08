@@ -13,15 +13,19 @@
  */
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Task as MongooseTask, TaskDocument } from 'src/schemas/task.schema';
+import {
+  Task as MongooseTask,
+  Task,
+  TaskDocument,
+} from 'src/schemas/task.schema';
 import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
 import { Model, isValidObjectId } from 'mongoose';
 import {
   ApiResponse,
   ApiError,
-  Task,
-  CreateTaskDto,
   UserRole,
+  CreateTaskDto,
+  UpdateTaskDto,
 } from '@repo/types';
 
 @Injectable()
@@ -146,7 +150,7 @@ export class TasksService {
    */
   async updateTask(
     id: string,
-    updateTaskDto: Partial<CreateTaskDto>,
+    updateTaskDto: UpdateTaskDto,
     userId?: string,
   ): Promise<ApiResponse<Task, ApiError>> {
     if (!isValidObjectId(id)) {

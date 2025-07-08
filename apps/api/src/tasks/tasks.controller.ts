@@ -1,3 +1,4 @@
+import { CreateTaskDto } from './../../../../packages/types/src/dtos/tasks/task.dto';
 /**
  * Tasks Controller
  * ================
@@ -26,16 +27,11 @@ import {
   Req,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import {
-  ApiResponse,
-  ApiError,
-  Task,
-  CreateTaskDto,
-  WorkspacePermission,
-} from '@repo/types';
+import { ApiResponse, ApiError, WorkspacePermission } from '@repo/types';
 import { AuthGuard } from '../guards/auth.guards';
 import { WorkspaceAuthorizationGuard } from '../guards/workspace-authorization.guard';
 import type { WorkspaceRequest } from 'src/interfaces/request-workspace.interface';
+import { Task } from 'src/schemas/task.schema';
 
 @UseGuards(AuthGuard)
 @Controller('tasks')
@@ -87,12 +83,7 @@ export class TasksController {
     @Body() dto: Partial<CreateTaskDto>,
     @Req() req: WorkspaceRequest,
   ): Promise<ApiResponse<Task, ApiError>> {
-    return this.tasksService.updateTask(
-      id,
-      dto,
-      req.userId,
-      req.workspaceMemberRole,
-    );
+    return this.tasksService.updateTask(id, dto, req.userId);
   }
 
   /**
