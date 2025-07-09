@@ -1,13 +1,4 @@
-import {
-  IsString,
-  IsDateString,
-  IsOptional,
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsEmpty,
-} from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsArray, IsEnum, IsNotEmpty, IsNumber, IsEmpty } from "class-validator";
 
 export class CreatePrdDto {
   @IsString()
@@ -26,15 +17,15 @@ export class CreatePrdDto {
 export class UpdatePrdDto {
   @IsString()
   @IsOptional()
-  workspaceId!: string;
+  workspaceId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  title!: string;
+  @IsOptional()
+  title?: string;
 
   @IsString()
-  @IsNotEmpty()
-  content!: string;
+  @IsOptional()
+  content?: string;
 }
 
 export class VersionDto {

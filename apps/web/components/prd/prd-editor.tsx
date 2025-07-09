@@ -7,74 +7,111 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePrd, usePrdsByWorkspace } from "@/hooks/use-prds";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import "@uiw/react-md-editor/markdown-editor.css";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 interface PRDEditorProps {
-  title: string;
-  content: string;
-  onSave: (content: string, title: string) => Promise<void>;
-  onSaveAsNewVersion: (content: string, title: string) => Promise<void>;
-  onChange?: (title: string, content: string) => void;
-  isSaving: boolean;
+  workspaceId: string;
+  canEdit?: boolean;
 }
 
-export function PRDEditor({
-  title,
-  content,
-  onSave,
-  onSaveAsNewVersion,
-  onChange,
-  isSaving,
-}: PRDEditorProps) {
-  const [editTitle, setEditTitle] = useState(title);
-  const [editContent, setEditContent] = useState(content);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+export function PRDEditor({ workspaceId, canEdit = true }: PRDEditorProps) {
+  // Get current PRD from workspace
+  const { data: prds = [] } = usePrdsByWorkspace(workspaceId);
+  const currentPrd = prds.length > 0 ? prds[0] : null;
 
-  // Only initialize once or when explicitly reset
+  // PRD operations
+  const { createPrd, updatePrd, isLoading } = usePrd();
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+
+  // Initialize form with current PRD data
   useEffect(() => {
-    if (!isInitialized) {
-      setEditTitle(title);
-      setEditContent(content);
-      setIsInitialized(true);
+    if (currentPrd) {
+      setTitle(currentPrd.title);
+      setContent(currentPrd.content);
+    } else {
+      // Reset for new PRD
+      setTitle("");
+      setContent("");
     }
-  }, [title, content, isInitialized]);
+  }, [currentPrd]);
 
-  // Reset state when saved (when title and content match what we have)
-  useEffect(() => {
-    if (editTitle === title && editContent === content) {
-      setHasChanges(false);
+  // Check if form has valid data
+  const hasValidData = title.trim() !== "" && content.trim() !== "";
+
+  // Check if data has changed from original
+  const hasChanges = currentPrd ? title !== currentPrd.title || content !== currentPrd.content : hasValidData; // For new PRD, any valid data means "has changes"
+
+  // Button states
+  const canSaveChanges = currentPrd && hasChanges && hasValidData;
+  const canCreateNew = hasValidData; // Can always create new if data is valid
+  const canUpdate = canSaveChanges;
+
+  const handleSaveChanges = async () => {
+    if (!canEdit || !currentPrd) {
+      toast.error("Cannot save changes");
+      return;
     }
-  }, [title, content, editTitle, editContent]);
 
-  useEffect(() => {
-    const titleChanged = editTitle !== title;
-    const contentChanged = editContent !== content;
-    setHasChanges(titleChanged || contentChanged);
-
-    // Call onChange when content changes
-    if (onChange) {
-      onChange(editTitle, editContent);
+    try {
+      await updatePrd.mutateAsync({
+        prdId: currentPrd._id,
+        data: { title, content },
+      });
+    } catch (error) {
+      console.error("Failed to update PRD:", error);
     }
-  }, [editTitle, editContent, title, content, onChange]);
-
-  const handleTitleChange = (newTitle: string) => {
-    setEditTitle(newTitle);
   };
 
-  const handleContentChange = (newContent: string | undefined) => {
-    setEditContent(newContent ?? "");
+  const handleCreateNew = async () => {
+    if (!canEdit) {
+      toast.error("You don't have permission to create PRDs");
+      return;
+    }
+
+    try {
+      await createPrd.mutateAsync({
+        workspaceId,
+        data: { title, content },
+      });
+    } catch (error) {
+      console.error("Failed to create PRD:", error);
+    }
   };
 
-  const handleSave = () => {
-    onSave(editContent, editTitle);
-  };
+  // Show no access message if user can't edit
+  if (!canEdit) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>No Edit Permission</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              You don&apos;t have permission to edit PRDs in this workspace. Only managers can create or edit PRDs.
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
 
-  const handleSaveAsNewVersion = () => {
-    onSaveAsNewVersion(editContent, editTitle);
+  const getStatusMessage = () => {
+    if (!currentPrd) {
+      return "Create your first PRD for this workspace. Both title and content are required.";
+    }
+    if (hasChanges) {
+      return "You have unsaved changes";
+    }
+    return "Make changes to save or create a new version";
   };
 
   return (
@@ -82,79 +119,71 @@ export function PRDEditor({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      className="space-y-4"
     >
+      {/* Action Buttons - Above the editor */}
+      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-lg">{currentPrd ? "Edit PRD" : "Create New PRD"}</h3>
+          <p className="text-sm text-muted-foreground">{getStatusMessage()}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Save Changes Button - only show if we have an existing PRD */}
+          {currentPrd && (
+            <Button variant="outline" size="sm" onClick={handleSaveChanges} disabled={!canUpdate || isLoading}>
+              {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Save Changes
+            </Button>
+          )}
+
+          {/* Create New Button - always show but with different labels */}
+          <Button size="sm" onClick={handleCreateNew} disabled={!canCreateNew || isLoading}>
+            {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <GitBranch className="w-4 h-4 mr-2" />}
+            {currentPrd ? "Save as New Version" : "Create PRD"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Editor Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Edit PRD</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSave}
-                disabled={!hasChanges || isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Save Changes
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSaveAsNewVersion}
-                disabled={!hasChanges || isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <GitBranch className="w-4 h-4 mr-2" />
-                )}
-                Save as New Version
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Document Title</Label>
             <Input
               id="title"
-              value={editTitle}
-              onChange={(e) => handleTitleChange(e.target.value)}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter PRD title"
+              disabled={!canEdit}
+              className="text-lg font-medium"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="content">Content (Markdown)</Label>
-            <div className="border rounded-md overflow-hidden">
+            <div className="border rounded-md overflow-hidden" data-color-mode="light">
               <MDEditor
-                value={editContent}
-                onChange={handleContentChange}
+                value={content}
+                onChange={(value) => setContent(value ?? "")}
                 height={600}
                 visibleDragbar={false}
+                data-color-mode="light"
                 textareaProps={{
                   placeholder: "Write your PRD content in Markdown format...",
                   autoCapitalize: "off",
+                  disabled: !canEdit,
                   style: {
                     fontSize: "14px",
                     fontFamily:
                       'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                    backgroundColor: "#ffffff",
+                    color: "#000000",
                   },
                 }}
+                preview="edit"
+                hideToolbar={false}
               />
             </div>
           </div>
-          {hasChanges && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-muted-foreground bg-muted p-2 rounded-md"
-            >
-              You have unsaved changes
-            </motion.div>
-          )}
         </CardContent>
       </Card>
     </motion.div>

@@ -605,6 +605,12 @@ export const queryKeys = {
     detail: (id: string) => ["hotfixes", "detail", id] as const,
     byRelease: (releaseId: string) => ["hotfixes", "release", releaseId] as const,
   },
+
+  // PRDs endpoints: /api/v1/workspaces/:workspaceId/prd/*
+  prds: {
+    lists: () => ["prds", "list"] as const,
+    byWorkspace: (workspaceId: string) => ["prds", "workspace", workspaceId] as const,
+  },
 } as const;
 
 // Extend axios types

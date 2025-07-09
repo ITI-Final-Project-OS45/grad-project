@@ -1,11 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Prd, PrdDocument } from '../schemas/prd.schema';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
-import { User, UserDocument } from '../schemas/user.schema';
-import { CreatePrdDto, UserRole } from '@repo/types';
-import { WorkspaceNotFoundException } from '../exceptions/domain.exceptions';
+import {
+  CreatePrdDto,
+  UpdatePrdDto,
+  UserRole,
+  ApiError,
+  ApiResponse,
+} from '@repo/types';
+import {
+  WorkspaceNotFoundException,
+  UnauthorizedActionException,
+} from '../exceptions/domain.exceptions';
 
 @Injectable()
 export class PrdService {
@@ -14,11 +22,12 @@ export class PrdService {
     private readonly prdModel: Model<PrdDocument>,
     @InjectModel(Workspace.name)
     private readonly workspaceModel: Model<WorkspaceDocument>,
-    @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
   ) {}
 
-  async create(createPrdDto: CreatePrdDto, userId: string) {
+  async create(
+    createPrdDto: CreatePrdDto,
+    userId: string,
+  ): Promise<ApiResponse<Prd, ApiError>> {
     // Validate workspace exists
     const workspace = await this.workspaceModel
       .findById(createPrdDto.workspaceId)
@@ -26,30 +35,53 @@ export class PrdService {
     if (!workspace) {
       throw new WorkspaceNotFoundException();
     }
+
     // Validate user is a manager in the workspace
     const member = workspace.members.find(
       (m) => m.userId.toString() === userId,
     );
     if (!member || member.role !== UserRole.Manager) {
-      throw new Error('Only managers can create PRDs');
+      throw new UnauthorizedActionException(
+        'create PRDs. Only managers are allowed',
+      );
     }
+
     // Check if a PRD already exists for this workspace
-    const prd = await this.prdModel.findOne({
-      workspaceId: createPrdDto.workspaceId,
-    });
-    if (prd) {
+    const existingPrd = await this.prdModel
+      .findOne({ workspaceId: createPrdDto.workspaceId })
+      .exec();
+
+    if (existingPrd) {
       // Add the current state to versions
-      const prevVersionNo = (prd.versions?.length || 0) + 1;
-      prd.versions.push({
-        versionNo: prevVersionNo,
-        title: prd.title,
-        content: prd.content,
-        createdBy: prd.createdBy,
-      });
-      prd.title = createPrdDto.title;
-      prd.content = createPrdDto.content;
-      prd.createdBy = new Types.ObjectId(userId);
-      return await prd.save();
+      const prevVersionNo = (existingPrd.versions?.length || 0) + 1;
+      const updatedPrd = await this.prdModel
+        .findByIdAndUpdate(
+          existingPrd._id,
+          {
+            $push: {
+              versions: {
+                versionNo: prevVersionNo,
+                title: existingPrd.title,
+                content: existingPrd.content,
+                createdBy: existingPrd.createdBy,
+              },
+            },
+            title: createPrdDto.title,
+            content: createPrdDto.content,
+            createdBy: new Types.ObjectId(userId),
+          },
+          { new: true, runValidators: true },
+        )
+        .populate('createdBy', 'username displayName email')
+        .lean<Prd>()
+        .exec();
+
+      return {
+        success: true,
+        status: HttpStatus.CREATED,
+        message: 'PRD updated with new version successfully',
+        data: updatedPrd!,
+      };
     } else {
       // Create new PRD if none exists
       const newPrd = new this.prdModel({
@@ -57,48 +89,205 @@ export class PrdService {
         createdBy: userId,
         versions: [],
       });
-      return await newPrd.save();
+      const savedPrd = await newPrd.save();
+
+      const populatedPrd = await this.prdModel
+        .findById(savedPrd._id)
+        .populate('createdBy', 'username displayName email')
+        .lean<Prd>()
+        .exec();
+
+      return {
+        success: true,
+        status: HttpStatus.CREATED,
+        message: 'PRD created successfully',
+        data: populatedPrd!,
+      };
     }
   }
 
-  async findByWorkspace(workspaceId: string) {
-    return await this.prdModel.find({ workspaceId }).exec();
+  async findByWorkspace(
+    workspaceId: string,
+  ): Promise<ApiResponse<Prd[], ApiError>> {
+    const prds = await this.prdModel
+      .find({ workspaceId })
+      .populate('createdBy', 'username displayName email')
+      .lean<Prd[]>()
+      .exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message:
+        prds.length > 0
+          ? 'PRDs retrieved successfully'
+          : 'No PRDs found for this workspace',
+      data: prds,
+    };
   }
 
   async updateByWorkspace(
     workspaceId: string,
-    updatePrdDto: { title: string; content: string },
+    updatePrdDto: UpdatePrdDto,
     userId: string,
-  ) {
+  ): Promise<ApiResponse<Prd, ApiError>> {
     const prd = await this.prdModel.findOne({ workspaceId }).exec();
-    if (!prd) throw new Error('PRD not found');
+    if (!prd) {
+      throw new WorkspaceNotFoundException();
+    }
+
     const workspace = await this.workspaceModel.findById(workspaceId).exec();
-    if (!workspace) throw new Error('Workspace not found');
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
     const member = workspace.members.find(
-      (m: any) => m.userId.toString() === userId,
+      (m) => m.userId.toString() === userId,
     );
     if (!member || member.role !== UserRole.Manager) {
-      throw new Error('Only managers can update PRDs');
+      throw new UnauthorizedActionException(
+        'update PRDs. Only managers are allowed',
+      );
     }
-    prd.title = updatePrdDto.title;
-    prd.content = updatePrdDto.content;
-    return await prd.save();
+
+    // Build update object with only provided fields
+    const updateData: Partial<Prd> = {};
+    if (updatePrdDto.title) updateData.title = updatePrdDto.title;
+    if (updatePrdDto.content) updateData.content = updatePrdDto.content;
+
+    const updatedPrd = await this.prdModel
+      .findByIdAndUpdate(prd._id, updateData, {
+        new: true,
+        runValidators: true,
+      })
+      .populate('createdBy', 'username displayName email')
+      .lean<Prd>()
+      .exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'PRD updated successfully',
+      data: updatedPrd!,
+    };
   }
-  async deleteByWorkspace(workspaceId: string, userId: string) {
+
+  async deleteByWorkspace(
+    workspaceId: string,
+    userId: string,
+  ): Promise<ApiResponse<null, ApiError>> {
     const prd = await this.prdModel
       .findOne({ workspaceId })
       .sort({ createdAt: -1 })
       .exec();
-    if (!prd) throw new Error('PRD not found');
+    if (!prd) {
+      throw new WorkspaceNotFoundException();
+    }
+
     const workspace = await this.workspaceModel.findById(workspaceId).exec();
-    if (!workspace) throw new Error('Workspace not found');
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
     const member = workspace.members.find(
-      (m: any) => m.userId.toString() === userId,
+      (m) => m.userId.toString() === userId,
     );
     if (!member || member.role !== UserRole.Manager) {
-      throw new Error('Only managers can delete PRDs');
+      throw new UnauthorizedActionException(
+        'delete PRDs. Only managers are allowed',
+      );
     }
-    await this.prdModel.deleteOne({ _id: prd._id });
-    return { success: true };
+
+    await this.prdModel.findByIdAndDelete(prd._id).exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'PRD deleted successfully',
+      data: null,
+    };
+  }
+
+  async updateById(
+    prdId: string,
+    updatePrdDto: UpdatePrdDto,
+    userId: string,
+  ): Promise<ApiResponse<Prd, ApiError>> {
+    const prd = await this.prdModel.findById(prdId).exec();
+    if (!prd) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    const workspace = await this.workspaceModel
+      .findById(prd.workspaceId)
+      .exec();
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === userId,
+    );
+    if (!member || member.role !== UserRole.Manager) {
+      throw new UnauthorizedActionException(
+        'update PRDs. Only managers are allowed',
+      );
+    }
+
+    // Build update object with only provided fields
+    const updateData: Partial<Prd> = {};
+    if (updatePrdDto.title) updateData.title = updatePrdDto.title;
+    if (updatePrdDto.content) updateData.content = updatePrdDto.content;
+
+    const updatedPrd = await this.prdModel
+      .findByIdAndUpdate(prdId, updateData, {
+        new: true,
+        runValidators: true,
+      })
+      .populate('createdBy', 'username displayName email')
+      .lean<Prd>()
+      .exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'PRD updated successfully',
+      data: updatedPrd!,
+    };
+  }
+
+  async deleteById(
+    prdId: string,
+    userId: string,
+  ): Promise<ApiResponse<null, ApiError>> {
+    const prd = await this.prdModel.findById(prdId).exec();
+    if (!prd) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    const workspace = await this.workspaceModel
+      .findById(prd.workspaceId)
+      .exec();
+    if (!workspace) {
+      throw new WorkspaceNotFoundException();
+    }
+
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === userId,
+    );
+    if (!member || member.role !== UserRole.Manager) {
+      throw new UnauthorizedActionException(
+        'delete PRDs. Only managers are allowed',
+      );
+    }
+
+    await this.prdModel.findByIdAndDelete(prdId).exec();
+
+    return {
+      success: true,
+      status: HttpStatus.OK,
+      message: 'PRD deleted successfully',
+      data: null,
+    };
   }
 }
