@@ -1,28 +1,25 @@
-"use client"
+"use client";
 
-import { CreateDesignDialog } from "@/components/design/create-design-dialog"
-import { UpdateDesignDialog } from "@/components/design/update-design-dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useDesign, useDesigns } from "@/hooks/use-designs"
-import type { DesignResponse } from "@repo/types"
-import { useParams } from "next/navigation"
-import React from "react"
-import Link from "next/link"
-import { Edit, MoreHorizontal, Palette, Sparkles, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
-import { useWorkspacePermissions } from "@/lib/permissions"
-import { useUser } from "@/hooks/use-user"
-import { useWorkspaceMembersByWorkspace } from "@/hooks/use-workspace-members"
+import { CreateDesignDialog } from "@/components/design/create-design-dialog";
+import { UpdateDesignDialog } from "@/components/design/update-design-dialog";
+import { useDesign, useDesigns } from "@/hooks/use-designs";
+import type { DesignResponse } from "@repo/types";
+import { useParams } from "next/navigation";
+import React from "react";
+import { Palette, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useWorkspacePermissions } from "@/lib/permissions";
+import { useUser } from "@/hooks/use-user";
+import { useWorkspaceMembersByWorkspace } from "@/hooks/use-workspace-members";
+import { DesignsList, DesignItem } from "@/components/design/designs-list";
 
 export default function DesignsPage() {
-  const { id: workspaceId }: { id: string } = useParams()
-  const { data: designs, error, isLoading } = useDesigns(workspaceId)
-  const { createDesign, updateDesign, deleteDesign } = useDesign(workspaceId)
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
-  const [editingDesign, setEditingDesign] = React.useState<DesignResponse | null>(null)
+  const { id: workspaceId }: { id: string } = useParams();
+  const { data: designs, error, isLoading } = useDesigns(workspaceId);
+  const { createDesign, updateDesign, deleteDesign } = useDesign(workspaceId);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [editingDesign, setEditingDesign] = React.useState<DesignResponse | null>(null);
 
   // Get current user and workspace members
   const { currentUser } = useUser();
@@ -34,21 +31,20 @@ export default function DesignsPage() {
   const { canCreateDesign, canUpdateDesign, canDeleteDesign } = useWorkspacePermissions(currentUserId, currentUserRole);
 
   function onDeleteDesign(designId: string) {
-    console.log("Delete design  of ID:", designId)
-    deleteDesign.mutateAsync(designId)
+    console.log("Delete design  of ID:", designId);
+    deleteDesign.mutateAsync(designId);
   }
 
   function onEditDesign(designId: string) {
-    
     const design = designs?.find((d) => d._id === designId);
-    
-    if (design == null ) {
+
+    if (design == null) {
       toast.error("No Design to update");
-      return
+      return;
     }
-    setEditingDesign(design)
+    setEditingDesign(design);
     console.log(design);
-    setEditDialogOpen(true)
+    setEditDialogOpen(true);
   }
 
   return (
@@ -114,7 +110,8 @@ export default function DesignsPage() {
             {canCreateDesign && (
               <>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  Get started by creating your first design asset. Upload images, mockups, or connect your Figma designs.
+                  Get started by creating your first design asset. Upload images, mockups, or connect your Figma
+                  designs.
                 </p>
                 <CreateDesignDialog workspacesId={workspaceId} createDesign={createDesign} />
               </>
@@ -140,111 +137,14 @@ export default function DesignsPage() {
       </div>
 
       {/* Edit Design Dialog */}
-      {(editingDesign && canUpdateDesign) && <UpdateDesignDialog
-        workspacesId={workspaceId}
-        editingDesign={editingDesign}
-        open={editDialogOpen}
-        setOpen={setEditDialogOpen}
-      />}
+      {editingDesign && canUpdateDesign && (
+        <UpdateDesignDialog
+          workspacesId={workspaceId}
+          editingDesign={editingDesign}
+          open={editDialogOpen}
+          setOpen={setEditDialogOpen}
+        />
+      )}
     </div>
-  )
-}
-
-export function DesignsList({ children}: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">{children}</div>
-}
-
-export function DesignItem({
-  design,
-  workspacesId,
-  onEditDesign,
-  onDeleteDesign,
-  isDeleting,
-  canUpdateDesign, 
-  canDeleteDesign 
-}: {
-  design: DesignResponse
-  workspacesId: string
-  onEditDesign: (designId: string) => void
-  onDeleteDesign: (designId: string) => void
-  isDeleting?: boolean
-  canUpdateDesign: boolean
-  canDeleteDesign: boolean
-}) {
-  const [open, setOpen] = React.useState(false);
-  // const { canUpdateDesign, canDeleteDesign } = useWorkspacePermissions()
-
-  return (
-    <Link href={`/workspaces/${workspacesId}/designs/${design._id}`} className="block">
-      <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-primary/50 group">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-base sm:text-lg truncate group-hover:text-primary transition-colors">
-                Design: {design._id}
-              </CardTitle>
-              <CardDescription className="text-sm">
-                {design.type === "figma" ? "Figma Design" : "Mockup Design"}
-              </CardDescription>
-            </div>
-            {(canUpdateDesign && canDeleteDesign) &&(<DropdownMenu open={open} onOpenChange={setOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-muted shrink-0"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuItem
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    onEditDesign(design._id);
-                    setOpen(false);
-                  }}
-                  className="text-sm"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    onDeleteDesign(design._id);
-                    setOpen(false);
-                  }}
-                  className="text-sm text-destructive focus:text-destructive"
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>)}
-          </div>
-        </CardHeader>
-
-        <CardContent className="pt-0">
-          <div className="space-y-3">
-            {design.description && <p className="text-sm text-muted-foreground line-clamp-2">{design.description}</p>}
-
-            {design.assetUrl && (
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                <img
-                  src={design.assetUrl || "/placeholder.svg"}
-                  alt={`Design ${design._id}`}
-                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  )
+  );
 }
