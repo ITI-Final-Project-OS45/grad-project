@@ -5,7 +5,6 @@ import {
   Transition,
   type VariantLabels,
   type Target,
-  type AnimationControls,
   type TargetAndTransition,
 } from "framer-motion";
 
@@ -28,7 +27,7 @@ export interface RotatingTextProps
   texts: string[];
   transition?: Transition;
   initial?: boolean | Target | VariantLabels;
-  animate?: boolean | VariantLabels | AnimationControls | TargetAndTransition;
+  animate?: boolean | VariantLabels | TargetAndTransition;
   exit?: Target | VariantLabels;
   animatePresenceMode?: "sync" | "wait";
   animatePresenceInitial?: boolean;
@@ -79,7 +78,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     };
 
     const elements = useMemo(() => {
-      const currentText: string = texts[currentTextIndex];
+      const currentText: string = texts[currentTextIndex] ?? "";
       if (splitBy === "characters") {
         const words = currentText.split(" ");
         return words.map((word, i) => ({
@@ -198,27 +197,26 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
               const previousCharsCount = array
                 .slice(0, wordIndex)
                 .reduce((sum, word) => sum + word.characters.length, 0);
+              const totalChars = array.reduce((sum, word) => sum + word.characters.length, 0);
               return (
                 <span key={wordIndex} className={cn("inline-flex", splitLevelClassName)}>
                   {wordObj.characters.map((char, charIndex) => (
-                    <motion.span
+                    <RotatingChar
                       key={charIndex}
+                      char={char}
+                      charIndex={charIndex}
+                      previousCharsCount={previousCharsCount}
+                      totalChars={totalChars}
                       initial={initial}
                       animate={animate}
                       exit={exit}
-                      transition={{
-                        ...transition,
-                        delay: getStaggerDelay(
-                          previousCharsCount + charIndex,
-                          array.reduce((sum, word) => sum + word.characters.length, 0)
-                        ),
-                      }}
-                      className={cn("inline-block", elementLevelClassName)}
-                    >
-                      {char}
-                    </motion.span>
+                      transition={transition}
+                      elementLevelClassName={elementLevelClassName}
+                      needsSpace={wordObj.needsSpace}
+                      wordObj={wordObj}
+                      getStaggerDelay={getStaggerDelay}
+                    />
                   ))}
-                  {wordObj.needsSpace && <span className="whitespace-pre"> </span>}
                 </span>
               );
             })}
@@ -231,3 +229,49 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
 
 RotatingText.displayName = "RotatingText";
 export default RotatingText;
+
+const RotatingChar = React.memo(function RotatingChar({
+  char,
+  charIndex,
+  previousCharsCount,
+  totalChars,
+  initial,
+  animate,
+  exit,
+  transition,
+  elementLevelClassName,
+  needsSpace,
+  wordObj,
+  getStaggerDelay,
+}: {
+  char: string;
+  charIndex: number;
+  previousCharsCount: number;
+  totalChars: number;
+  initial: any;
+  animate: any;
+  exit: any;
+  transition: any;
+  elementLevelClassName?: string;
+  needsSpace: boolean;
+  wordObj: any;
+  getStaggerDelay: (index: number, totalChars: number) => number;
+}) {
+  return (
+    <motion.span
+      key={charIndex}
+      initial={initial}
+      animate={animate}
+      exit={exit}
+      transition={{
+        ...transition,
+        delay: getStaggerDelay(previousCharsCount + charIndex, totalChars),
+      }}
+      className={cn("inline-block", elementLevelClassName)}
+      aria-hidden="true"
+    >
+      {char}
+      {needsSpace && charIndex === wordObj.characters.length - 1 ? " " : ""}
+    </motion.span>
+  );
+});
