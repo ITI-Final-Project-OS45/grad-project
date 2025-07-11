@@ -29,6 +29,15 @@ export const ZDesignsSchema = z.object({
             }
         }
     }
+    if (data.type === "mockup") {
+        if (!data.file || (data.file instanceof FileList && data.file.length === 0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["file"],
+                message: "Mockup file is required",
+            });
+        }
+    }
 });
 
 // Edit Workspace Schema

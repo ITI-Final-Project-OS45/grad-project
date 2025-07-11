@@ -82,7 +82,7 @@ export function DesignItem({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 max-w-8/12 ">
               <CardTitle className="text-base sm:text-lg truncate group-hover:text-primary transition-colors">
-                Design: {design._id}
+                {design.description}
               </CardTitle>
               <CardDescription className="text-sm">
                 {design.type === "figma" ? "Figma Design" : "Mockup Design"}
