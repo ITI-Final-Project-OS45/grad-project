@@ -39,9 +39,48 @@ export function DesignItem({
   return (
     <Link href={`/workspaces/${workspacesId}/designs/${design._id}`} className="block">
       <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-primary/50 group">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 max-w-full">
+          <div className="flex justify-end">
+                {canUpdateDesign && canDeleteDesign && (
+                  <DropdownMenu open={open} onOpenChange={setOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-muted shrink-0"
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        <MoreHorizontal className="h-4 w-4 inline-block" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onEditDesign(design._id);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Design
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onDeleteDesign(design._id);
+                        }}
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {isDeleting ? "Deleting..." : "Delete Design"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+            </div>
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 max-w-8/12 ">
               <CardTitle className="text-base sm:text-lg truncate group-hover:text-primary transition-colors">
                 Design: {design._id}
               </CardTitle>
@@ -49,49 +88,17 @@ export function DesignItem({
                 {design.type === "figma" ? "Figma Design" : "Mockup Design"}
               </CardDescription>
             </div>
-            {canUpdateDesign && canDeleteDesign && (
-              <DropdownMenu open={open} onOpenChange={setOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-muted shrink-0"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onEditDesign(design._id);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Design
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onDeleteDesign(design._id);
-                    }}
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeleting ? "Deleting..." : "Delete Design"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="aspect-video bg-muted rounded-lg overflow-hidden">
             <img
-              src={design.assetUrl || "/placeholder-design.png"}
+              src={
+                design.type === "figma"
+                  ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyIEyfClNU0SVPqlWPYBvqUG3JjBr-Orm3dw&s"
+                  : design.assetUrl || "https://media.istockphoto.com/id/1409329028/vector/no-picture-available-placeholder-thumbnail-icon-illustration-design.jpg?s=612x612&w=0&k=20&c=_zOuJu755g2eEUioiOUdz_mHKJQJn-tDgIAhQzyeKUQ="
+              }
               alt={design._id}
               className="w-full h-full object-cover"
             />

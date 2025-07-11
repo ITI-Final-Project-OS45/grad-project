@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    esmExternals: "loose",
-  },
+//   experimental: {
+//     esmExternals: "loose",
+//   },
   transpilePackages: ["@repo/types"],
   webpack: (config) => {
     // Handle decorators in shared packages

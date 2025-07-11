@@ -5,7 +5,9 @@ export const ZDesignsSchema = z.object({
     type:        z.enum(["figma", "mockup"], { required_error: "Design type is required" }),
     description: z.string().max(500, "Description must be less than 500 characters"),
     assetUrl:    z.string().max(500, "URL must be less than 500 characters").optional(),
-    file:        z.instanceof(FileList).optional(),
+    file:        typeof window !== "undefined" && typeof FileList !== "undefined"
+                    ? z.instanceof(FileList).optional()
+                    : z.any().optional(),
 }).superRefine((data, ctx) => {
     if (data.type === "figma") {
         if (!data.assetUrl || data.assetUrl.trim() === "") {
