@@ -1,4 +1,4 @@
-import { UserRole } from "@repo/types";
+import { UserRole } from '@repo/types';
 
 /**
  * Permission utility for workspace role-based access control
@@ -82,6 +82,13 @@ export const WorkspacePermissions = {
     return context.currentUserRole === UserRole.Manager;
   },
 
+  canUpdateQAStatus: (context: PermissionContext): boolean => {
+    // Both managers and QA can update QA status
+    return [UserRole.Manager, UserRole.QA].includes(
+      context.currentUserRole as UserRole
+    );
+  },
+
   canViewReleases: (context: PermissionContext): boolean => {
     // Any workspace member can view releases
     return !!context.currentUserRole;
@@ -89,21 +96,21 @@ export const WorkspacePermissions = {
 
   // Bug management permissions (based on bugs.service.ts validation methods)
   canCreateBug: (context: PermissionContext): boolean => {
-    // QA, Manager, and Developer can create bugs
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+    // Only QA and Manager can create bugs
+    return [UserRole.QA, UserRole.Manager].includes(
       context.currentUserRole as UserRole
     );
   },
 
   canUpdateBug: (context: PermissionContext): boolean => {
-    // QA, Manager, and Developer can update bugs
+    // QA, Manager, and Developer roles can update bugs (matches backend validateWorkspacePermissionForUpdate)
     return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
       context.currentUserRole as UserRole
     );
   },
 
   canDeleteBug: (context: PermissionContext): boolean => {
-    // Only QA and Manager can delete bugs
+    // Only QA and Manager can delete bugs (matches backend validateWorkspacePermissionForDelete)
     return [UserRole.QA, UserRole.Manager].includes(
       context.currentUserRole as UserRole
     );
@@ -111,15 +118,15 @@ export const WorkspacePermissions = {
 
   // Hotfix management permissions (based on hotfixes.service.ts validation methods)
   canCreateHotfix: (context: PermissionContext): boolean => {
-    // QA, Manager, and Developer can create hotfixes
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+    // Only QA and Manager can create hotfixes
+    return [UserRole.QA, UserRole.Manager].includes(
       context.currentUserRole as UserRole
     );
   },
 
   canUpdateHotfix: (context: PermissionContext): boolean => {
-    // QA, Manager, and Developer can update hotfixes
-    return [UserRole.QA, UserRole.Manager, UserRole.Developer].includes(
+    // Only QA and Manager can update hotfixes
+    return [UserRole.QA, UserRole.Manager].includes(
       context.currentUserRole as UserRole
     );
   },
@@ -229,6 +236,7 @@ export const useWorkspacePermissions = (
     canCreateRelease: WorkspacePermissions.canCreateRelease(context),
     canUpdateRelease: WorkspacePermissions.canUpdateRelease(context),
     canDeleteRelease: WorkspacePermissions.canDeleteRelease(context),
+    canUpdateQAStatus: WorkspacePermissions.canUpdateQAStatus(context),
     canViewReleases: WorkspacePermissions.canViewReleases(context),
 
     // Bug permissions

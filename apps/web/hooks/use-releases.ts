@@ -7,21 +7,32 @@
  * Uses ReleaseService for all API operations.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ReleaseService, CreateReleaseData, UpdateReleaseData } from "@/services/release.service";
-import { ApiResponse, ApiError, ReleaseResponse, QAStatus } from "@repo/types";
-import { queryKeys } from "@/lib/axios";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ReleaseService,
+  CreateReleaseData,
+  UpdateReleaseData,
+} from '@/services/release.service';
+import { ApiResponse, ApiError, ReleaseResponse, QAStatus } from '@repo/types';
+import { queryKeys } from '@/lib/axios';
+import { toast } from 'sonner';
 
 export const useRelease = () => {
   const queryClient = useQueryClient();
 
   // Create Release Mutation
-  const createRelease = useMutation<ApiResponse<ReleaseResponse, ApiError>, Error, CreateReleaseData>({
+  const createRelease = useMutation<
+    ApiResponse<ReleaseResponse, ApiError>,
+    Error,
+    CreateReleaseData
+  >({
     mutationFn: ReleaseService.createRelease,
     onSuccess: (response, variables) => {
       if (response.success && response.data) {
-        queryClient.setQueryData(queryKeys.releases.detail(response.data._id), response.data);
+        queryClient.setQueryData(
+          queryKeys.releases.detail(response.data._id),
+          response.data
+        );
 
         queryClient.setQueryData(
           queryKeys.releases.byWorkspace(variables.workspaceId),
@@ -35,15 +46,15 @@ export const useRelease = () => {
 
         queryClient.invalidateQueries({
           queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
-          refetchType: "active",
+          refetchType: 'active',
         });
 
-        toast.success("Release created successfully");
+        toast.success('Release created successfully');
       }
     },
     onError: (error: unknown) => {
       const errorResponse = error as Error;
-      toast.error(errorResponse.message || "Failed to create release");
+      toast.error(errorResponse.message || 'Failed to create release');
     },
   });
 
@@ -53,17 +64,23 @@ export const useRelease = () => {
     Error,
     { releaseId: string; data: UpdateReleaseData; workspaceId?: string }
   >({
-    mutationFn: ({ releaseId, data }) => ReleaseService.updateRelease(releaseId, data),
+    mutationFn: ({ releaseId, data }) =>
+      ReleaseService.updateRelease(releaseId, data),
     onSuccess: (response, variables) => {
       if (response.success && response.data) {
-        queryClient.setQueryData(queryKeys.releases.detail(variables.releaseId), response.data);
+        queryClient.setQueryData(
+          queryKeys.releases.detail(variables.releaseId),
+          response.data
+        );
 
         if (variables.workspaceId) {
           queryClient.setQueryData(
             queryKeys.releases.byWorkspace(variables.workspaceId),
             (oldData: ReleaseResponse[] | undefined) => {
               if (oldData) {
-                return oldData.map((release) => (release._id === variables.releaseId ? response.data : release));
+                return oldData.map((release) =>
+                  release._id === variables.releaseId ? response.data : release
+                );
               }
               return oldData;
             }
@@ -71,16 +88,16 @@ export const useRelease = () => {
 
           queryClient.invalidateQueries({
             queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
-            refetchType: "active",
+            refetchType: 'active',
           });
         }
 
-        toast.success("Release updated successfully");
+        toast.success('Release updated successfully');
       }
     },
     onError: (error: unknown) => {
       const errorResponse = error as Error;
-      toast.error(errorResponse.message || "Failed to update release");
+      toast.error(errorResponse.message || 'Failed to update release');
     },
   });
 
@@ -93,14 +110,19 @@ export const useRelease = () => {
     mutationFn: ({ releaseId }) => ReleaseService.deployRelease(releaseId),
     onSuccess: (response, variables) => {
       if (response.success && response.data) {
-        queryClient.setQueryData(queryKeys.releases.detail(variables.releaseId), response.data);
+        queryClient.setQueryData(
+          queryKeys.releases.detail(variables.releaseId),
+          response.data
+        );
 
         if (variables.workspaceId) {
           queryClient.setQueryData(
             queryKeys.releases.byWorkspace(variables.workspaceId),
             (oldData: ReleaseResponse[] | undefined) => {
               if (oldData) {
-                return oldData.map((release) => (release._id === variables.releaseId ? response.data : release));
+                return oldData.map((release) =>
+                  release._id === variables.releaseId ? response.data : release
+                );
               }
               return oldData;
             }
@@ -108,16 +130,16 @@ export const useRelease = () => {
 
           queryClient.invalidateQueries({
             queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
-            refetchType: "active",
+            refetchType: 'active',
           });
         }
 
-        toast.success("Release deployed successfully");
+        toast.success('Release deployed successfully');
       }
     },
     onError: (error: unknown) => {
       const errorResponse = error as Error;
-      toast.error(errorResponse.message || "Failed to deploy release");
+      toast.error(errorResponse.message || 'Failed to deploy release');
     },
   });
 
@@ -127,17 +149,23 @@ export const useRelease = () => {
     Error,
     { releaseId: string; qaStatus: QAStatus; workspaceId?: string }
   >({
-    mutationFn: ({ releaseId, qaStatus }) => ReleaseService.updateQAStatus(releaseId, qaStatus),
+    mutationFn: ({ releaseId, qaStatus }) =>
+      ReleaseService.updateQAStatus(releaseId, qaStatus),
     onSuccess: (response, variables) => {
       if (response.success && response.data) {
-        queryClient.setQueryData(queryKeys.releases.detail(variables.releaseId), response.data);
+        queryClient.setQueryData(
+          queryKeys.releases.detail(variables.releaseId),
+          response.data
+        );
 
         if (variables.workspaceId) {
           queryClient.setQueryData(
             queryKeys.releases.byWorkspace(variables.workspaceId),
             (oldData: ReleaseResponse[] | undefined) => {
               if (oldData) {
-                return oldData.map((release) => (release._id === variables.releaseId ? response.data : release));
+                return oldData.map((release) =>
+                  release._id === variables.releaseId ? response.data : release
+                );
               }
               return oldData;
             }
@@ -145,49 +173,66 @@ export const useRelease = () => {
 
           queryClient.invalidateQueries({
             queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
-            refetchType: "active",
+            refetchType: 'active',
           });
         }
 
-        toast.success("QA status updated successfully");
+        toast.success('QA status updated successfully');
       }
     },
     onError: (error: unknown) => {
       const errorResponse = error as Error;
-      toast.error(errorResponse.message || "Failed to update QA status");
+      toast.error(errorResponse.message || 'Failed to update QA status');
     },
   });
 
   // Delete Release Mutation
-  const deleteRelease = useMutation<ApiResponse<null, ApiError>, Error, { releaseId: string; workspaceId?: string }>({
+  const deleteRelease = useMutation<
+    ApiResponse<null, ApiError>,
+    Error,
+    { releaseId: string; workspaceId: string }
+  >({
     mutationFn: ({ releaseId }) => ReleaseService.deleteRelease(releaseId),
     onSuccess: (response, variables) => {
       if (response.success) {
-        if (variables.workspaceId) {
-          queryClient.setQueryData(
-            queryKeys.releases.byWorkspace(variables.workspaceId),
-            (oldData: ReleaseResponse[] | undefined) => {
-              if (oldData) {
-                return oldData.filter((release) => release._id !== variables.releaseId);
-              }
-              return oldData;
+        // Remove the deleted release from the workspace releases list
+        queryClient.setQueryData(
+          queryKeys.releases.byWorkspace(variables.workspaceId),
+          (oldData: ReleaseResponse[] | undefined) => {
+            if (oldData) {
+              return oldData.filter(
+                (release) => release._id !== variables.releaseId
+              );
             }
-          );
+            return [];
+          }
+        );
 
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
-            refetchType: "active",
-          });
-        }
+        // Remove the individual release query
+        queryClient.removeQueries({
+          queryKey: queryKeys.releases.detail(variables.releaseId),
+        });
 
-        queryClient.removeQueries({ queryKey: queryKeys.releases.detail(variables.releaseId) });
+        // Invalidate all related queries to ensure fresh data
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.releases.byWorkspace(variables.workspaceId),
+        });
 
-        toast.success("Release deleted successfully");
+        // Also invalidate any bugs and hotfixes related to this release
+        queryClient.invalidateQueries({
+          queryKey: ['bugs', 'byRelease', variables.releaseId],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ['hotfixes', 'byRelease', variables.releaseId],
+        });
+
+        toast.success('Release deleted successfully');
       }
     },
     onError: (error: unknown) => {
       const errorResponse = error as Error;
-      toast.error(errorResponse.message || "Failed to delete release");
+      toast.error(errorResponse.message || 'Failed to delete release');
     },
   });
 
@@ -247,7 +292,7 @@ export const useReleases = (workspaceId: string) => {
         // Always return array, even if empty
         return response.data || [];
       }
-      throw new Error(response.message || "Failed to fetch releases");
+      throw new Error(response.message || 'Failed to fetch releases');
     },
     enabled: !!workspaceId,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -266,7 +311,7 @@ export const useReleaseById = (releaseId: string) => {
       if (response.success) {
         return response.data;
       }
-      throw new Error(response.message || "Failed to fetch release");
+      throw new Error(response.message || 'Failed to fetch release');
     },
     enabled: !!releaseId,
     staleTime: 2 * 60 * 1000, // 2 minutes
