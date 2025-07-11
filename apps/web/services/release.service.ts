@@ -23,8 +23,15 @@
  * @author Mohamed Hesham
  */
 
-import { apiClient } from "@/lib/axios";
-import { ApiResponse, ApiError, CreateReleaseDto, UpdateReleaseDto, ReleaseResponse, QAStatus } from "@repo/types";
+import { apiClient } from '@/lib/axios';
+import {
+  ApiResponse,
+  ApiError,
+  CreateReleaseDto,
+  UpdateReleaseDto,
+  ReleaseResponse,
+  QAStatus,
+} from '@repo/types';
 
 export type Release = ReleaseResponse;
 
@@ -44,13 +51,14 @@ export interface UpdateReleaseData {
 }
 
 // Deploy release data type
-export type DeployReleaseData = Record<string, never>;
+// export type DeployReleaseData = Record<string, never>;
 
 export class ReleaseService {
   private static readonly ENDPOINTS = {
-    RELEASES: "/releases",
+    RELEASES: '/releases',
     RELEASE_BY_ID: (id: string) => `/releases/${id}`,
-    RELEASES_BY_WORKSPACE: (workspaceId: string) => `/releases/workspace/${workspaceId}`,
+    RELEASES_BY_WORKSPACE: (workspaceId: string) =>
+      `/releases/workspace/${workspaceId}`,
     DEPLOY_RELEASE: (id: string) => `/releases/${id}/deploy`,
     UPDATE_QA_STATUS: (id: string) => `/releases/${id}/qa`,
   } as const;
@@ -59,7 +67,9 @@ export class ReleaseService {
    * Create new release
    * Maps to POST /releases
    */
-  static async createRelease(data: CreateReleaseData): Promise<ApiResponse<Release, ApiError>> {
+  static async createRelease(
+    data: CreateReleaseData
+  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
     // Map to CreateReleaseDto format
     const releaseData: CreateReleaseDto = {
       versionTag: data.versionTag,
@@ -68,30 +78,44 @@ export class ReleaseService {
       plannedDate: data.plannedDate,
     };
 
-    return await apiClient.post<Release>(ReleaseService.ENDPOINTS.RELEASES, releaseData);
+    return await apiClient.post<ReleaseResponse>(
+      ReleaseService.ENDPOINTS.RELEASES,
+      releaseData
+    );
   }
 
   /**
    * Get release by ID
    * Maps to GET /releases/:id
    */
-  static async getReleaseById(releaseId: string): Promise<ApiResponse<Release, ApiError>> {
-    return await apiClient.get<Release>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId));
+  static async getReleaseById(
+    releaseId: string
+  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
+    return await apiClient.get<ReleaseResponse>(
+      ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId)
+    );
   }
 
   /**
    * Get all releases for workspace
    * Maps to GET /releases/workspace/:workspaceId
    */
-  static async getReleasesByWorkspace(workspaceId: string): Promise<ApiResponse<Release[], ApiError>> {
-    return await apiClient.get<Release[]>(ReleaseService.ENDPOINTS.RELEASES_BY_WORKSPACE(workspaceId));
+  static async getReleasesByWorkspace(
+    workspaceId: string
+  ): Promise<ApiResponse<ReleaseResponse[], ApiError>> {
+    return await apiClient.get<ReleaseResponse[]>(
+      ReleaseService.ENDPOINTS.RELEASES_BY_WORKSPACE(workspaceId)
+    );
   }
 
   /**
    * Update release
    * Maps to PUT /releases/:id
    */
-  static async updateRelease(releaseId: string, data: UpdateReleaseData): Promise<ApiResponse<Release, ApiError>> {
+  static async updateRelease(
+    releaseId: string,
+    data: UpdateReleaseData
+  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
     // Map to UpdateReleaseDto format
     const updateData: UpdateReleaseDto = {};
 
@@ -101,11 +125,23 @@ export class ReleaseService {
     if (data.description !== undefined) {
       updateData.description = data.description;
     }
-    if (data.plannedDate !== undefined) {
-      updateData.plannedDate = data.plannedDate;
-    }
 
-    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId), updateData);
+    return await apiClient.put<ReleaseResponse>(
+      ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId),
+      updateData
+    );
+  }
+
+  /**
+   * Delete release
+   * Maps to DELETE /releases/:id
+   */
+  static async deleteRelease(
+    releaseId: string
+  ): Promise<ApiResponse<null, ApiError>> {
+    return await apiClient.delete<null>(
+      ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId)
+    );
   }
 
   /**
@@ -113,24 +149,26 @@ export class ReleaseService {
    * Maps to PUT /releases/:id/deploy
    * Note: API doesn't accept any body data, just triggers deploy
    */
-  static async deployRelease(releaseId: string): Promise<ApiResponse<Release, ApiError>> {
+  static async deployRelease(
+    releaseId: string
+  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
     // API ignores body data, only uses userId from JWT token
-    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.DEPLOY_RELEASE(releaseId));
+    return await apiClient.put<ReleaseResponse>(
+      ReleaseService.ENDPOINTS.DEPLOY_RELEASE(releaseId)
+    );
   }
 
   /**
    * Update QA status
    * Maps to PUT /releases/:id/qa
    */
-  static async updateQAStatus(releaseId: string, qaStatus: QAStatus): Promise<ApiResponse<Release, ApiError>> {
-    return await apiClient.put<Release>(ReleaseService.ENDPOINTS.UPDATE_QA_STATUS(releaseId), { qaStatus });
-  }
-
-  /**
-   * Delete release
-   * Maps to DELETE /releases/:id
-   */
-  static async deleteRelease(releaseId: string): Promise<ApiResponse<null, ApiError>> {
-    return await apiClient.delete<null>(ReleaseService.ENDPOINTS.RELEASE_BY_ID(releaseId));
+  static async updateQAStatus(
+    releaseId: string,
+    qaStatus: QAStatus
+  ): Promise<ApiResponse<ReleaseResponse, ApiError>> {
+    return await apiClient.put<ReleaseResponse>(
+      ReleaseService.ENDPOINTS.UPDATE_QA_STATUS(releaseId),
+      { qaStatus }
+    );
   }
 }
