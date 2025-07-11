@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![TeamFlow Logo](https://img.shields.io/badge/TeamFlow-Project%20Management-blue?style=for-the-badge&logo=react)
+![TeamFlow Logo](./apps/web/public/assets/logo-dark.svg)
 
 **Streamline Your Project Workflow That Flows Naturally** 🚀
 
