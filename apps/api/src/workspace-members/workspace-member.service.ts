@@ -9,9 +9,9 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiResponse, UserRole, JwtPayload } from '@repo/types';
 import { isValidObjectId, Model, Types } from 'mongoose';
-import { User, UserDocument } from 'src/schemas/user.schema';
-import { WorkspaceMember } from 'src/schemas/workspace-member.schema';
-import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
+import { User, UserDocument } from '../schemas/user.schema';
+import { WorkspaceMember } from '../schemas/workspace-member.schema';
+import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { ApiError } from '@repo/types';
 import { JwtService } from '@nestjs/jwt';
 

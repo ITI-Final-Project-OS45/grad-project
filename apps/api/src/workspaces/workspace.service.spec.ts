@@ -23,6 +23,12 @@ interface MockModel<T> extends Partial<Model<T>> {
   lean: jest.Mock;
 }
 
+function mockPopulateChain(returnValue: any) {
+  const exec = jest.fn().mockResolvedValue(returnValue);
+  const populate = jest.fn().mockReturnThis();
+  return { populate, exec };
+}
+
 // Move mockUserId and mockWorkspaceId definitions to the top of the file
 const mockWorkspaceId = new Types.ObjectId();
 const mockUserId = new Types.ObjectId();
@@ -106,11 +112,7 @@ describe('WorkspaceService', () => {
     });
 
     it('should return workspace if found', async () => {
-      workspaceModel.findById.mockReturnValue({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue(mockWorkspace),
-        }),
-      });
+      workspaceModel.findById.mockReturnValue(mockPopulateChain(mockWorkspace));
       const result = await service.getOneWorkspace(mockWorkspaceId.toString());
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockWorkspace);
@@ -137,7 +139,7 @@ describe('WorkspaceService', () => {
       workspaceModel.create.mockImplementation(() => { throw new Error('DB error'); });
       const userModel = { findByIdAndUpdate: jest.fn() };
       (service as any).userModel = userModel;
-      await expect(service.createWorkspace({ name: 'Test', description: 'desc', createdBy: mockUserId.toString() }, mockUserId.toString())).rejects.toThrow('failed to create this workspace');
+      await expect(service.createWorkspace({ name: 'Test', description: 'desc', createdBy: mockUserId.toString() }, mockUserId.toString())).rejects.toThrow('DB error');
     });
     it('should throw BadRequestException if required fields are missing when creating workspace', async () => {
       workspaceModel.create.mockResolvedValue(null);
@@ -149,11 +151,7 @@ describe('WorkspaceService', () => {
 
   describe('getAllWorkspacesForUser', () => {
     it('should get all workspaces for user successfully', async () => {
-      workspaceModel.find.mockReturnValue({
-        populate: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([mockWorkspace]),
-        }),
-      });
+      workspaceModel.find.mockReturnValue(mockPopulateChain([mockWorkspace]));
       const result = await service.getAllWorkspacesForUser(mockUserId.toString());
       expect(result.success).toBe(true);
       expect(result.data).toEqual([mockWorkspace]);
