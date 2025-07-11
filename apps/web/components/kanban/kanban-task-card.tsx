@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Task } from "@repo/types";
+import { Task, UserRole } from "@repo/types";
 import { useDrag } from "react-dnd";
 import EditTaskModal from "./edit-task-modal";
 import { TaskService } from "@/services/task.service";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RichTextPreview } from "./rich-text-preview";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 type KanbanUser = {
   _id: string;
@@ -23,6 +24,9 @@ type KanbanTaskCardProps = {
   onTaskUpdated?: (updatedTask: Task) => void;
   onTaskRemoved?: (taskId: string) => void;
   onPreview?: () => void;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 };
 
 const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
@@ -31,6 +35,9 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
   onTaskUpdated,
   onTaskRemoved,
   onPreview,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const assignedUsers = users.filter((user) =>
     task.assignedTo.includes(user._id)
@@ -145,29 +152,35 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 mt-4">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditModalOpen(true);
-              }}
-              className="whitespace-nowrap"
-            >
-              <Edit className="h-4 w-4" /> Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={deleting}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent Card onClick from firing
-                handleRemove();
-              }}
-              className="whitespace-nowrap"
-            >
-              <Trash2 className="h-4 w-4" /> Delete
-            </Button>
+            {/* Only show edit button if user can update task details */}
+            {permissions?.canUpdateSpecificTaskDetails(task.assignedTo) && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditModalOpen(true);
+                }}
+                className="whitespace-nowrap"
+              >
+                <Edit className="h-4 w-4" /> Edit
+              </Button>
+            )}
+            {/* Only show delete button if user can delete tasks */}
+            {permissions?.canDeleteTask && (
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={deleting}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent Card onClick from firing
+                  handleRemove();
+                }}
+                className="whitespace-nowrap"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
+            )}
           </div>
           <EditTaskModal
             task={task}
@@ -175,6 +188,9 @@ const KanbanTaskCard: React.FC<KanbanTaskCardProps> = ({
             open={isEditModalOpen}
             onClose={() => setEditModalOpen(false)}
             onUpdate={handleUpdate}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+            permissions={permissions}
           />
         </Card>
       </motion.div>

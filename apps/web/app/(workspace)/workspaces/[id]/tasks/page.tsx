@@ -16,6 +16,9 @@ import {
 import { useTaskSearch } from "@/hooks/use-task-search";
 import { useTaskCrudHandlers } from "@/hooks/use-task-crud-handlers";
 import { mapWorkspaceMembersToUsers } from "@/hooks/map-workspace-members-to-users";
+import { useWorkspacePermissions } from "@/lib/permissions";
+import { useUser } from "@/hooks/use-user";
+import { useWorkspaceById } from "@/hooks/use-workspace";
 
 const columns: KanbanColumn[] = [
   { status: "todo", title: "To Do" },
@@ -28,9 +31,28 @@ export default function TasksPage() {
   const workspaceId = params.id as string;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<any[]>([]); // Will map from workspace members
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // Get workspace and current user context
+  const { data: workspace } = useWorkspaceById(workspaceId);
+  const { currentUser } = useUser();
+  const currentUserId = currentUser?.data?._id;
+  const currentUserMember = workspaceMembers.find(
+    (m) => m.userId._id === currentUserId
+  );
+  const currentUserRole = currentUserMember?.role;
+
+  // Get permissions
+  const permissions = useWorkspacePermissions(
+    currentUserId,
+    currentUserRole,
+    workspace?.createdBy
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -39,7 +61,9 @@ export default function TasksPage() {
       WorkspaceMemberService.getAllMembers(workspaceId),
     ]).then(([tasksResponse, membersResponse]) => {
       setTasks(tasksResponse.data ?? []);
-      setUsers(mapWorkspaceMembersToUsers(membersResponse.data ?? []));
+      const members = membersResponse.data ?? [];
+      setWorkspaceMembers(members);
+      setUsers(mapWorkspaceMembersToUsers(members));
       setLoading(false);
     });
   }, [workspaceId]);
@@ -118,6 +142,9 @@ export default function TasksPage() {
           workspaceId={workspaceId}
           onTaskUpdated={handleTaskUpdated}
           onTaskRemoved={handleTaskRemoved}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          permissions={permissions}
         />
       </motion.div>
     </main>

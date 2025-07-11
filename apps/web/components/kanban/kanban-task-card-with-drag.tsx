@@ -1,7 +1,8 @@
 import React, { useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
-import { Task, TaskStatus } from "@repo/types";
+import { Task, TaskStatus, UserRole } from "@repo/types";
 import KanbanTaskCard from "./kanban-task-card";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 type KanbanUser = {
   _id: string;
@@ -23,6 +24,9 @@ type KanbanTaskCardWithDragProps = {
     hoverIndex: number,
     columnStatus: TaskStatus
   ) => void;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 };
 
 export const KanbanTaskCardWithDrag: React.FC<KanbanTaskCardWithDragProps> = ({
@@ -34,6 +38,9 @@ export const KanbanTaskCardWithDrag: React.FC<KanbanTaskCardWithDragProps> = ({
   onTaskRemoved,
   onPreview,
   moveTask,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -75,6 +82,9 @@ export const KanbanTaskCardWithDrag: React.FC<KanbanTaskCardWithDragProps> = ({
         onTaskUpdated={onTaskUpdated}
         onTaskRemoved={onTaskRemoved}
         onPreview={onPreview}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+        permissions={permissions}
       />
     </div>
   );

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Task, TaskPriority, TaskStatus } from "@repo/types";
+import React, { useState, useEffect } from "react";
+import { Task, TaskPriority, TaskStatus, UserRole } from "@repo/types";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 // KanbanUser type for workspace members
 // (matches usage in KanbanTaskCard, KanbanBoard, etc)
@@ -25,6 +26,9 @@ type EditTaskModalProps = {
   open: boolean;
   onClose: () => void;
   onUpdate: (updatedTask: Partial<Task>) => void;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 };
 
 const EditTaskModal: React.FC<EditTaskModalProps> = ({
@@ -33,6 +37,9 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
   open,
   onClose,
   onUpdate,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
@@ -42,6 +49,18 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
   );
   const [assignedTo, setAssignedTo] = useState<string[]>(task.assignedTo);
   const [memberSearch, setMemberSearch] = useState("");
+
+  // Reset form when task changes or modal opens
+  useEffect(() => {
+    if (open && task) {
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setDueDate(task.dueDate || "");
+      setPriority(task.priority || "medium");
+      setAssignedTo(task.assignedTo);
+      setMemberSearch("");
+    }
+  }, [task, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
