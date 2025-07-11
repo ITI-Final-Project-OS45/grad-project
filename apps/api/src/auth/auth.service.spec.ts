@@ -173,7 +173,7 @@ describe('AuthService', () => {
 
     it('should throw error if bcrypt.hash fails', async () => {
       userModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
-      mockBcrypt.hash.mockRejectedValue(new Error('Hash error'));
+      (mockBcrypt.hash as jest.Mock).mockRejectedValue(new Error('Hash error'));
 
       await expect(service.signup(signupData)).rejects.toThrow('Hash error');
     });
@@ -253,7 +253,7 @@ describe('AuthService', () => {
 */
     it('should throw error if bcrypt.compare fails', async () => {
       userModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(mockUser) });
-      mockBcrypt.compare.mockRejectedValue(new Error('Compare error'));
+      (mockBcrypt.compare as jest.Mock).mockRejectedValue(new Error('Compare error'));
 
       return await expect(service.login(loginData)).rejects.toThrow('Compare error');
     });
