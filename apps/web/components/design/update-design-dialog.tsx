@@ -35,6 +35,8 @@ import { useDesign } from "@/hooks/use-designs";
 import { DesignResponse } from "@repo/types";
 
 export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen }: {workspacesId: string, editingDesign: DesignResponse, open: boolean, setOpen: (open: boolean) => void }) {
+    const [loading, setLoading] = useState(false);
+
     const form = useForm<ZEditDesignsFormData>({
         resolver: zodResolver(ZEditDesignsSchema),
         defaultValues: {
@@ -57,6 +59,7 @@ export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen 
     const closeDialog = () => setOpen(false)
 
     const handleSubmit = async (data: ZEditDesignsFormData) => {
+        setLoading(true)
         const formData = new FormData();
         if (data.type) {
             formData.append("type", data.type);
@@ -78,6 +81,8 @@ export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen 
             closeDialog(); // Close the dialog after successful submit
         } catch (error) {
             console.error("Error creating design:", error);
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -182,7 +187,7 @@ export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen 
                         <DialogClose asChild>
                         <Button variant="outline">Cancel</Button>
                         </DialogClose>
-                        <Button type="submit">Update</Button>
+                        <Button type="submit" disabled={loading}>{loading ? "Updating..." : "Update"}</Button>
                     </DialogFooter>
 
 

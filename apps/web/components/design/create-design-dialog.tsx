@@ -36,6 +36,7 @@ import React, { useState } from "react";
 export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId: string, createDesign: any } /* { form, handleSubmit }: { form: ReturnType<typeof useForm<ZDesignsFormData>>, handleSubmit: (data: ZDesignsFormData) => void} */) {
 
     const [open, setOpen] = useState(false)
+    const [loading, setLoading] = useState(false)
 
     const form = useForm<ZDesignsFormData>({
         resolver: zodResolver(ZDesignsSchema),
@@ -48,6 +49,7 @@ export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId:
      const closeDialog = () => setOpen(false)
 
     const handleSubmit = async (data: ZDesignsFormData) => {
+        setLoading(true)
         const formData = new FormData();
         formData.append("workspaceId", workspacesId);
         formData.append("type", data.type);
@@ -62,10 +64,13 @@ export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId:
 
         try {
             form.reset(); // Clear the form fields after successful submit
+
             await createDesign.mutateAsync(formData as any);
             closeDialog(); // Close the dialog after successful submit
         } catch (error) {
             console.error("Error creating design:", error);
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -164,8 +169,6 @@ export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId:
                         </div>
                     </div>
 
-
-
                     {/* Zod error messages */}
                     {form.formState.errors.type && (
                         <div className="text-sm text-destructive bg-destructive/5 px-3 py-2 rounded-md border border-destructive/20 mt-5">{form.formState.errors.type.message as string}</div>
@@ -180,12 +183,11 @@ export function CreateDesignDialog( {workspacesId, createDesign}: {workspacesId:
                         <div className="text-sm text-destructive bg-destructive/5 px-3 py-2 rounded-md border border-destructive/20 mt-5">{form.formState.errors.file.message as string}</div>
                     )}
                 
-
                     <DialogFooter className="mt-4"> 
                         <DialogClose asChild>
                         <Button variant="outline">Cancel</Button>
                         </DialogClose>
-                        <Button type="submit">Create</Button>
+                        <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create"}</Button>
                     </DialogFooter>
 
 
