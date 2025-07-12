@@ -1,5 +1,5 @@
 import React from "react";
-import { Task, TaskStatus } from "@repo/types";
+import { Task, TaskStatus, UserRole } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RichTextPreview } from "./rich-text-preview";
@@ -10,6 +10,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useTaskGroups } from "@/hooks/use-task-groups";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 // Define KanbanUser type locally for type safety
 export type KanbanUser = {
@@ -26,6 +27,9 @@ interface TaskListViewProps {
   onDelete: (task: Task) => void;
   onPreview: (task: Task) => void;
   renderSectionAction?: (status: TaskStatus) => React.ReactNode;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 }
 
 export const TaskListView: React.FC<TaskListViewProps> = ({
@@ -35,6 +39,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   onDelete,
   onPreview,
   renderSectionAction,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const groupedSorted = useTaskGroups(tasks);
   const allStatuses: TaskStatus[] = ["todo", "in-progress", "done"];
@@ -135,23 +142,31 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                           className="flex gap-2 flex-wrap z-10"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => onEdit(task)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete(task);
-                            }}
-                          >
-                            Delete
-                          </Button>
+                          {/* Only show Edit button if user can update task details */}
+                          {permissions?.canUpdateSpecificTaskDetails(
+                            task.assignedTo
+                          ) && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => onEdit(task)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {/* Only show Delete button if user can delete tasks */}
+                          {permissions?.canDeleteTask && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(task);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );

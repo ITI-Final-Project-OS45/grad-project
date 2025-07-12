@@ -1,4 +1,4 @@
-import { UserRole } from '@repo/types';
+import { UserRole } from "@repo/types";
 
 /**
  * Permission utility for workspace role-based access control
@@ -158,6 +158,29 @@ export const WorkspacePermissions = {
     );
   },
 
+  canUpdateTaskDetails: (
+    context: PermissionContext,
+    taskAssignedUsers?: string[]
+  ): boolean => {
+    // Only managers can update task details (title, description, etc.)
+    // Developers can only update status via drag & drop
+    return context.currentUserRole === UserRole.Manager;
+  },
+
+  canUpdateTaskStatus: (
+    context: PermissionContext,
+    taskAssignedUsers?: string[]
+  ): boolean => {
+    // Managers can update any task status, developers can only update assigned tasks status
+    if (context.currentUserRole === UserRole.Manager) {
+      return true;
+    }
+    return !!(
+      context.currentUserId &&
+      taskAssignedUsers?.includes(context.currentUserId)
+    );
+  },
+
   canDeleteTask: (context: PermissionContext): boolean => {
     // Only managers can delete tasks
     return context.currentUserRole === UserRole.Manager;
@@ -252,6 +275,8 @@ export const useWorkspacePermissions = (
     // Task permissions
     canCreateTask: WorkspacePermissions.canCreateTask(context),
     canUpdateTask: WorkspacePermissions.canUpdateTask(context),
+    canUpdateTaskDetails: WorkspacePermissions.canUpdateTaskDetails(context),
+    canUpdateTaskStatus: WorkspacePermissions.canUpdateTaskStatus(context),
     canDeleteTask: WorkspacePermissions.canDeleteTask(context),
     canViewTasks: WorkspacePermissions.canViewTasks(context),
 
@@ -273,5 +298,9 @@ export const useWorkspacePermissions = (
     // Utility function for task-specific permissions
     canUpdateSpecificTask: (taskAssignedUsers?: string[]) =>
       WorkspacePermissions.canUpdateTask(context, taskAssignedUsers),
+    canUpdateSpecificTaskDetails: (taskAssignedUsers?: string[]) =>
+      WorkspacePermissions.canUpdateTaskDetails(context, taskAssignedUsers),
+    canUpdateSpecificTaskStatus: (taskAssignedUsers?: string[]) =>
+      WorkspacePermissions.canUpdateTaskStatus(context, taskAssignedUsers),
   };
 };

@@ -1,12 +1,13 @@
 import React, { useRef } from "react";
 import { useDrop } from "react-dnd";
-import { KanbanColumn, Task, TaskStatus } from "@repo/types";
+import { KanbanColumn, Task, TaskStatus, UserRole } from "@repo/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import AddTaskModal from "./task-modal";
 import { KanbanTaskCardWithDrag } from "./kanban-task-card-with-drag";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 type KanbanUser = {
   _id: string;
@@ -32,6 +33,9 @@ type KanbanColumnComponentProps = {
     columnStatus: TaskStatus
   ) => void;
   className?: string;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 };
 
 export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
@@ -47,6 +51,9 @@ export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   onPreview,
   moveTask,
   className,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const divRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,28 +82,31 @@ export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
         <span className="text-lg font-bold text-foreground truncate">
           {column.title}
         </span>
-        <Dialog
-          open={modalColumn === column.status}
-          onOpenChange={(open) => setModalColumn(open ? column.status : null)}
-        >
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="default"
-              className="gap-1 whitespace-nowrap"
-            >
-              <Plus className="h-4 w-4" /> Add
-            </Button>
-          </DialogTrigger>
-          <AddTaskModal
-            defaultStatus={column.status}
+        {/* Only show Add button if user can create tasks */}
+        {permissions?.canCreateTask && (
+          <Dialog
             open={modalColumn === column.status}
-            onClose={() => setModalColumn(null)}
-            onAdd={onAddTask}
-            users={users}
-            position={columnTasks.length}
-          />
-        </Dialog>
+            onOpenChange={(open) => setModalColumn(open ? column.status : null)}
+          >
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="default"
+                className="gap-1 whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4" /> Add
+              </Button>
+            </DialogTrigger>
+            <AddTaskModal
+              defaultStatus={column.status}
+              open={modalColumn === column.status}
+              onClose={() => setModalColumn(null)}
+              onAdd={onAddTask}
+              users={users}
+              position={columnTasks.length}
+            />
+          </Dialog>
+        )}
       </div>
       <div className="flex flex-col gap-4 flex-1 min-h-[100px]">
         {columnTasks.map((task, idx) => (
@@ -110,6 +120,9 @@ export const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
             onTaskRemoved={onTaskRemoved}
             onPreview={() => onPreview && onPreview(task)}
             moveTask={moveTask}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+            permissions={permissions}
           />
         ))}
       </div>

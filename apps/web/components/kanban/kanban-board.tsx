@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { KanbanColumn, Task, TaskStatus } from "@repo/types";
+import { KanbanColumn, Task, TaskStatus, UserRole } from "@repo/types";
 import AddTaskModal from "./task-modal";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -15,6 +15,7 @@ import { KanbanColumnComponent } from "./kanban-column";
 import { useKanbanTaskGroups } from "@/hooks/use-kanban-task-groups";
 import { useModalState } from "@/hooks/use-modal-state";
 import { useDragAndDrop } from "@/hooks/use-drag-and-drop";
+import { useWorkspacePermissions } from "@/lib/permissions";
 
 // Change User import to a local type for Kanban users (from workspace members)
 type KanbanUser = {
@@ -32,7 +33,10 @@ type KanbanBoardProps = {
   onMoveTask: (taskId: string, newStatus: TaskStatus) => void;
   workspaceId: string;
   onTaskUpdated?: (updatedTask: Task) => void;
-  onTaskRemoved?: (taskId: string) => void; // Add this prop
+  onTaskRemoved?: (taskId: string) => void;
+  currentUserId?: string;
+  currentUserRole?: UserRole;
+  permissions?: ReturnType<typeof useWorkspacePermissions>;
 };
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -44,6 +48,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   workspaceId,
   onTaskUpdated,
   onTaskRemoved,
+  currentUserId,
+  currentUserRole,
+  permissions,
 }) => {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
 
@@ -131,6 +138,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 onPreview={(task) => openPreviewModal(task)}
                 moveTask={moveTask}
                 className="bg-card dark:bg-card-dark border border-border dark:border-border-dark rounded-md shadow-md"
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+                permissions={permissions}
               />
             ))}
           </div>
@@ -144,17 +154,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           onDelete={(task) => {
             if (onTaskRemoved) onTaskRemoved(task._id);
           }}
-          renderSectionAction={(status) => (
-            <Button
-              size="sm"
-              variant="outline"
-              className="ml-2"
-              onClick={() => openAddModal(status)}
-              aria-label={`Add to ${status}`}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          )}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          permissions={permissions}
+          renderSectionAction={(status) =>
+            permissions?.canCreateTask ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => openAddModal(status)}
+                aria-label={`Add to ${status}`}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            ) : null
+          }
         />
       )}
 
