@@ -8,7 +8,6 @@ import {
 import { AuthGuard } from 'src/guards/auth.guards';
 import type { RequestWithUser } from 'src/interfaces/request-user.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { WorkspaceAuthorizationGuard } from 'src/guards/workspace-authorization.guard';
 
 @UseGuards(AuthGuard)
 @Controller('design-assets')

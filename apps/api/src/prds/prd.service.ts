@@ -151,15 +151,19 @@ export class PrdService {
       //! generate tasks by gemini
       if (populatedPrd && generateTasks) {
         const sanitizedContent = this.sanitizeMarkdown(populatedPrd.content);
-        const tasks = await this.aiService.generateTasks(
+        let tasks = await this.aiService.generateTasks(
           sanitizedContent,
           workspace.members,
           String(workspace._id),
         );
 
-        const tasksArray: CreateTaskDto[] = JSON.parse(
-          tasks,
-        ) as CreateTaskDto[];
+        if(tasks.startsWith('```')) {
+
+            tasks = tasks.replace("```json", "");
+            tasks = tasks.replace("```", "");
+        }
+        
+        const tasksArray: CreateTaskDto[] = JSON.parse(tasks) as CreateTaskDto[];
         await this.tasksService.createBulkTasks(tasksArray, userId);
       }
 
