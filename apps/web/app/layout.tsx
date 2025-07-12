@@ -44,6 +44,11 @@ export const metadata: Metadata = {
   publisher: "TeamFlow",
   applicationName: "TeamFlow",
   category: "productivity",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
   openGraph: {
     title: "TeamFlow - Project Management Platform",
     description:
