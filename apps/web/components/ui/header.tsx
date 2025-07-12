@@ -4,12 +4,13 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggleDropdown } from "./theme-toggle-dropdown";
 import { Briefcase, LogOut, Menu, X } from "lucide-react";
 import { NAV_ITEMS } from "@/constants/navigation";
+import { useAuth } from "@/hooks/use-auth";
 import { tokenManager } from "@/lib/token";
 import { UserButton } from "../user/user-button";
 import { NotificationButton } from "./notification-button";
@@ -305,7 +306,7 @@ export const Header = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
+  const { signOut } = useAuth();
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
@@ -315,9 +316,7 @@ export const Header = () => {
     setIsLoaded(true);
   }, []);
   const handleSignOut = () => {
-    tokenManager.clearTokens();
-    setIsAuthenticated(false);
-    router.push("/signin");
+    signOut.mutate();
   };
   if (!isLoaded) {
     return (

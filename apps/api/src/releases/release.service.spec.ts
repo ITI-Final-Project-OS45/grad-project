@@ -305,11 +305,18 @@ describe('ReleaseService', () => {
 
     it('should update release successfully', async () => {
       // Mock release exists and user is creator
-      const findOneQuery: MockQuery = {
+      const findByIdQuery: MockQuery = {
         exec: jest.fn().mockResolvedValue(mockRelease),
         populate: jest.fn(),
       };
-      releaseModel.findOne.mockReturnValue(findOneQuery);
+      releaseModel.findById.mockReturnValue(findByIdQuery);
+
+      // Mock workspace exists and user is manager
+      const workspaceQuery: MockQuery = {
+        exec: jest.fn().mockResolvedValue(mockWorkspace),
+        populate: jest.fn(),
+      };
+      workspaceModel.findById.mockReturnValue(workspaceQuery);
 
       const updatedRelease = { ...mockRelease, ...updateDto };
       const updateQuery: MockQuery = {
@@ -331,11 +338,11 @@ describe('ReleaseService', () => {
     });
 
     it('should throw ReleaseNotFoundException when release not found or user not creator', async () => {
-      const findOneQuery: MockQuery = {
+      const findByIdQuery: MockQuery = {
         exec: jest.fn().mockResolvedValue(null),
         populate: jest.fn(),
       };
-      releaseModel.findOne.mockReturnValue(findOneQuery);
+      releaseModel.findById.mockReturnValue(findByIdQuery);
 
       await expect(
         service.update(
@@ -349,11 +356,18 @@ describe('ReleaseService', () => {
 
   describe('deploy', () => {
     it('should deploy release successfully', async () => {
-      const findOneQuery: MockQuery = {
+      const findByIdQuery: MockQuery = {
         exec: jest.fn().mockResolvedValue(mockRelease),
         populate: jest.fn(),
       };
-      releaseModel.findOne.mockReturnValue(findOneQuery);
+      releaseModel.findById.mockReturnValue(findByIdQuery);
+
+      // Mock workspace exists and user is manager
+      const workspaceQuery: MockQuery = {
+        exec: jest.fn().mockResolvedValue(mockWorkspace),
+        populate: jest.fn(),
+      };
+      workspaceModel.findById.mockReturnValue(workspaceQuery);
 
       const deployedRelease = {
         ...mockRelease,
@@ -374,11 +388,11 @@ describe('ReleaseService', () => {
     });
 
     it('should throw ReleaseNotFoundException when release not found', async () => {
-      const findOneQuery: MockQuery = {
+      const findByIdQuery: MockQuery = {
         exec: jest.fn().mockResolvedValue(null),
         populate: jest.fn(),
       };
-      releaseModel.findOne.mockReturnValue(findOneQuery);
+      releaseModel.findById.mockReturnValue(findByIdQuery);
 
       await expect(
         service.deploy(mockReleaseId.toString(), mockUserId.toString()),

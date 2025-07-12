@@ -624,8 +624,14 @@ describe('BugsService', () => {
         ],
       };
 
+      // Create a bug where the Developer is the assigned user
+      const bugAssignedToDeveloper = {
+        ...mockBug,
+        assignedTo: mockUserId, // Make the Developer the assigned user
+      };
+
       const bugQuery: MockQuery = {
-        exec: jest.fn().mockResolvedValue(mockBug),
+        exec: jest.fn().mockResolvedValue(bugAssignedToDeveloper),
         populate: jest.fn(),
         lean: jest.fn(),
       };
@@ -652,7 +658,7 @@ describe('BugsService', () => {
       };
       userModel.findById.mockReturnValue(userQuery);
 
-      const updatedBug = { ...mockBug, ...mockUpdateBugDto };
+      const updatedBug = { ...bugAssignedToDeveloper, ...mockUpdateBugDto };
       const updateQuery: MockQuery = {
         populate: jest.fn().mockReturnThis(),
         lean: jest.fn().mockReturnThis(),

@@ -13,14 +13,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Briefcase, User, Settings } from "lucide-react";
 import { useState } from "react";
 import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
-import { tokenManager } from "@/lib/token";
-import { useRouter } from "next/navigation";
 
 export function UserButton() {
   const [open, setOpen] = useState(false);
   const { currentUser } = useUser();
-  const router = useRouter();
+  const { signOut } = useAuth();
   const user = currentUser?.data;
 
   const initials = user?.displayName
@@ -33,8 +32,7 @@ export function UserButton() {
     : "U";
 
   const handleSignOut = () => {
-    tokenManager.clearTokens();
-    router.push("/signin");
+    signOut.mutate();
   };
 
   return (
