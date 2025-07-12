@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ZDesignsFormData } from "@/lib/schemas/design-schemas"
-import { ZDesignsSchema } from "@/lib/schemas/design-schemas"
+import { ZDesignsFormData, ZEditDesignsSchema, ZEditDesignsFormData } from "@/lib/schemas/design-schemas"
 import { useForm, Controller } from "react-hook-form"
 import {
   Select,
@@ -36,8 +35,8 @@ import { useDesign } from "@/hooks/use-designs";
 import { DesignResponse } from "@repo/types";
 
 export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen }: {workspacesId: string, editingDesign: DesignResponse, open: boolean, setOpen: (open: boolean) => void }) {
-    const form = useForm<ZDesignsFormData>({
-        resolver: zodResolver(ZDesignsSchema),
+    const form = useForm<ZEditDesignsFormData>({
+        resolver: zodResolver(ZEditDesignsSchema),
         defaultValues: {
             type: editingDesign.type || "figma",
             description: editingDesign.description || "",
@@ -57,14 +56,19 @@ export function UpdateDesignDialog( {workspacesId, editingDesign, open, setOpen 
     const updateDesign = useDesign(workspacesId).updateDesign;
     const closeDialog = () => setOpen(false)
 
-    const handleSubmit = async (data: ZDesignsFormData) => {
+    const handleSubmit = async (data: ZEditDesignsFormData) => {
         const formData = new FormData();
-        formData.append("type", data.type);
-        formData.append("description", data.description || "");
+        if (data.type) {
+            formData.append("type", data.type);
+        }
+        if (data.description) {
+            formData.append("description", data.description);
+        }
+        if (data.assetUrl) {
+            formData.append("assetUrl", data.assetUrl);
+        }
         if (data.file && data.file.length > 0 && data.file[0]) {
             formData.append("file", data.file[0]);
-        }else if (data.assetUrl !== undefined && data.assetUrl !== "") {
-            formData.append("assetUrl", data.assetUrl);
         }
 
 

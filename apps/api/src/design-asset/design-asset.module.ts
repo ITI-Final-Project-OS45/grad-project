@@ -7,6 +7,7 @@ import { Workspace, WorkspaceSchema } from 'src/schemas/workspace.schema';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { CloudinaryModule } from 'nestjs-cloudinary';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AiService } from './ai.service';
 
 @Module({
   imports: [
@@ -38,6 +39,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   ],
   // exports:[MongooseModule], // this is if you want other modules imorting this to have access to mongoose 
   controllers: [DesignAssetController],
-  providers: [DesignAssetService],
+  providers: [DesignAssetService, AiService],
 })
 export class DesignAssetModule {}

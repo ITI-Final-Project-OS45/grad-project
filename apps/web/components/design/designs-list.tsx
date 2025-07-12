@@ -39,56 +39,55 @@ export function DesignItem({
   return (
     <Link href={`/workspaces/${workspacesId}/designs/${design._id}`} className="block">
       <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-primary/50 group">
-        <CardHeader className="pb-3 max-w-full">
-          <div className="flex justify-end">
-                {canUpdateDesign && canDeleteDesign && (
-                  <DropdownMenu open={open} onOpenChange={setOpen}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-muted shrink-0"
-                        onClick={(e) => e.preventDefault()}
-                      >
-                        <MoreHorizontal className="h-4 w-4 inline-block" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onEditDesign(design._id);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Design
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onDeleteDesign(design._id);
-                        }}
-                        className="cursor-pointer text-destructive focus:text-destructive"
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {isDeleting ? "Deleting..." : "Delete Design"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-            </div>
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 max-w-8/12 ">
-              <CardTitle className="text-base sm:text-lg truncate group-hover:text-primary transition-colors">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base sm:text-lg line-clamp-2 group-hover:text-primary transition-colors">
                 {design.description}
               </CardTitle>
               <CardDescription className="text-sm">
                 {design.type === "figma" ? "Figma Design" : "Mockup Design"}
               </CardDescription>
             </div>
-            
+            {canUpdateDesign && canDeleteDesign && (
+              <DropdownMenu open={open} onOpenChange={setOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-muted shrink-0"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <MoreHorizontal className="h-4 w-4 inline-block" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onEditDesign(design._id);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Design
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onDeleteDesign(design._id);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isDeleting ? "Deleting..." : "Delete Design"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pt-0">

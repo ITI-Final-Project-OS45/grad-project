@@ -40,12 +40,29 @@ export const ZDesignsSchema = z.object({
     }
 });
 
-// Edit Workspace Schema
-// export const editWorkspaceSchema = z.object({
-//   name: z.string().min(1, "Workspace name is required").max(100, "Name must be less than 100 characters"),
-//   description: z.string().max(500, "Description must be less than 500 characters").optional(),
-// });
+// Edit Design Schema - All fields optional and can be empty
+export const ZEditDesignsSchema = z.object({
+    type:        z.enum(["figma", "mockup"]).optional(),
+    description: z.string().max(500, "Description must be less than 500 characters").optional(),
+    assetUrl:    z.string().max(500, "URL must be less than 500 characters").optional(),
+    file:        typeof window !== "undefined" && typeof FileList !== "undefined"
+                    ? z.instanceof(FileList).optional()
+                    : z.any().optional(),
+}).superRefine((data, ctx) => {
+    // Only validate URL format if assetUrl is provided and not empty
+    if (data.assetUrl !== undefined && data.assetUrl.trim() !== "") {
+        try {
+            new URL(data.assetUrl);
+        } catch {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["assetUrl"],
+                message: "Must be a valid URL",
+            });
+        }
+    }
+});
 
 // Export types
 export type ZDesignsFormData = z.infer<typeof ZDesignsSchema>;
-// export type EditWorkspaceFormData = z.infer<typeof editWorkspaceSchema>;
+export type ZEditDesignsFormData = z.infer<typeof ZEditDesignsSchema>;

@@ -23,6 +23,7 @@ import {
 } from 'src/schemas/design-asset.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Workspace, WorkspaceDocument } from 'src/schemas/workspace.schema';
+import { AiService } from './ai.service';
 
 @Injectable()
 export class DesignAssetService {
@@ -33,6 +34,7 @@ export class DesignAssetService {
     private readonly workspaceModel: Model<WorkspaceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly aiService: AiService,
   ) {}
 
   async create(
@@ -40,6 +42,7 @@ export class DesignAssetService {
     userId: string,
     file: Express.Multer.File,
   ): Promise<ApiResponse<DesignAsset, ApiError>> {
+
     const workspaceExists = await this.workspaceModel
       .findById(designAssetDto.workspaceId)
       .exec();
@@ -69,21 +72,54 @@ export class DesignAssetService {
     }
 
     let url: string;
+    let fileType: string | undefined;
+    
     if (file) {
+      // Get file type information
+      fileType = file.mimetype; // e.g., "image/jpeg", "image/png"
+      const fileExtension = file.originalname.split('.').pop()?.toLowerCase(); // e.g., "jpg", "png"
+      
+      console.log('File MIME type:', fileType);
+      console.log('File extension:', fileExtension);
+      
+      // Optional: Validate file type
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/png', 
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+        'application/pdf'
+      ];
+      
+      if (!allowedMimeTypes.includes(fileType)) {
+        throw new BadRequestException({
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          message: 'Invalid file type',
+          error: `File type ${fileType} is not allowed. Allowed types: ${allowedMimeTypes.join(', ')}`,
+        });
+      }
+      
       const { secure_url } = await this.cloudinaryService.uploadFile(file);
       url = secure_url;
     } else {
-      url = designAssetDto?.assetUrl || ''; //todo add embed link
+      url = designAssetDto?.assetUrl || ''; 
     }
 
-    const createDesignAssetDto: CreateDesignAssetDto = {
-      ...designAssetDto,
-      assetUrl: url,
-      uploadedBy: user!.username,
-    };
+    //!##########################################
+    if (designAssetDto.description.trim() == '' && file && fileType){
+        console.log(workspaceExists.description);
+        
+        const desc = await this.aiService.generateText(file, fileType, workspaceExists?.description || '');
+        console.log(desc);
+        designAssetDto.description = desc;
 
-    const designAsset =
-      await this.DesignAssetModel.create(createDesignAssetDto);
+    }
+
+    const createDesignAssetDto: CreateDesignAssetDto = {...designAssetDto, assetUrl: url, uploadedBy: user!.username,};
+
+    const designAsset = await this.DesignAssetModel.create(createDesignAssetDto);
 
     // Add design asset to workspace's designs array
     await this.workspaceModel.findByIdAndUpdate(
