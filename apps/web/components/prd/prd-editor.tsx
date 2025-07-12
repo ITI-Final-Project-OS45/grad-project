@@ -2,11 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, GitBranch, Loader2 } from "lucide-react";
+import { Save, GitBranch, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { usePrd, usePrdsByWorkspace } from "@/hooks/use-prds";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
@@ -30,6 +38,8 @@ export function PRDEditor({ workspaceId, canEdit = true }: PRDEditorProps) {
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [showGenerateTasksDialog, setShowGenerateTasksDialog] = useState(false);
+  const [pendingCreateData, setPendingCreateData] = useState<{ title: string; content: string } | null>(null);
 
   // Initialize form with current PRD data
   useEffect(() => {
@@ -76,11 +86,21 @@ export function PRDEditor({ workspaceId, canEdit = true }: PRDEditorProps) {
       return;
     }
 
+    // Store the data and show dialog for task generation choice
+    setPendingCreateData({ title, content });
+    setShowGenerateTasksDialog(true);
+  };
+
+  const handleConfirmCreate = async (generateTasks: boolean) => {
+    if (!pendingCreateData) return;
+
     try {
       await createPrd.mutateAsync({
         workspaceId,
-        data: { title, content },
+        data: { ...pendingCreateData, generateTasks },
       });
+      setShowGenerateTasksDialog(false);
+      setPendingCreateData(null);
     } catch (error) {
       console.error("Failed to create PRD:", error);
     }
@@ -186,6 +206,31 @@ export function PRDEditor({ workspaceId, canEdit = true }: PRDEditorProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Generate Tasks Dialog */}
+      <Dialog open={showGenerateTasksDialog} onOpenChange={setShowGenerateTasksDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Auto-generate Tasks?
+            </DialogTitle>
+            <DialogDescription>
+              Would you like to automatically generate tasks from your PRD content using AI? This will create a set of
+              tasks based on the requirements in your document.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => handleConfirmCreate(false)} disabled={isLoading}>
+              No, create PRD only
+            </Button>
+            <Button onClick={() => handleConfirmCreate(true)} disabled={isLoading}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Yes, generate tasks
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

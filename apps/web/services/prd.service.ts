@@ -50,6 +50,7 @@ export interface Prd {
 export interface CreatePrdData {
   title: string;
   content: string;
+  generateTasks?: boolean;
 }
 
 // Update PRD data type for frontend
@@ -77,7 +78,14 @@ export class PrdService {
       content: data.content,
     };
 
-    return await apiClient.post<Prd>(PrdService.ENDPOINTS.CREATE_PRD(workspaceId), prdData);
+    // Build URL with query parameters
+    let url = PrdService.ENDPOINTS.CREATE_PRD(workspaceId);
+    if (data.generateTasks) {
+      url += '?auto=true';
+    }
+
+    // Remove timeout for create requests to allow for AI task generation
+    return await apiClient.post<Prd>(url, prdData, { timeout: 0 });
   }
 
   /**

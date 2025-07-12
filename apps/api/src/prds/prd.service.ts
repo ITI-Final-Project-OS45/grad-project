@@ -9,6 +9,8 @@ import {
   UserRole,
   ApiError,
   ApiResponse,
+  TaskResponse,
+  CreateTaskDto,
 } from '@repo/types';
 import {
   WorkspaceNotFoundException,
@@ -28,13 +30,54 @@ export class PrdService {
     private readonly aiService: AiService,
     // @InjectModel(Task.name)
     // private readonly taskModel: Model<TaskDocument>,
-    private readonly tasksService: TasksService
+    private readonly tasksService: TasksService,
   ) {}
+
+  /**
+   * Sanitizes markdown content by removing markdown formatting
+   * @param markdownContent - The markdown content to sanitize
+   * @returns Plain text content without markdown formatting
+   */
+  private sanitizeMarkdown(markdownContent: string): string {
+    return (
+      markdownContent
+        // Remove headers (# ## ### etc.)
+        .replace(/^#{1,6}\s+/gm, '')
+        // Remove bold formatting (**text** or __text__)
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/__(.*?)__/g, '$1')
+        // Remove italic formatting (*text* or _text_)
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/_(.*?)_/g, '$1')
+        // Remove code blocks (```code```)
+        .replace(/```[\s\S]*?```/g, '')
+        // Remove inline code (`code`)
+        .replace(/`([^`]+)`/g, '$1')
+        // Remove links [text](url)
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Remove images ![alt](url)
+        .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+        // Remove strikethrough (~~text~~)
+        .replace(/~~(.*?)~~/g, '$1')
+        // Remove blockquotes (> text)
+        .replace(/^>\s+/gm, '')
+        // Remove horizontal rules (---, ***, ___)
+        .replace(/^[-*_]{3,}$/gm, '')
+        // Remove list markers (-, *, +, 1., 2., etc.)
+        .replace(/^[-*+]\s+/gm, '')
+        .replace(/^\d+\.\s+/gm, '')
+        // Remove HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Clean up extra whitespace and newlines
+        .replace(/\n\s*\n/g, '\n')
+        .trim()
+    );
+  }
 
   async create(
     createPrdDto: CreatePrdDto,
     userId: string,
-    generateTasks: boolean
+    generateTasks: boolean,
   ): Promise<ApiResponse<Prd, ApiError>> {
     // Validate workspace exists
     const workspace = await this.workspaceModel
@@ -107,11 +150,17 @@ export class PrdService {
 
       //! generate tasks by gemini
       if (populatedPrd && generateTasks) {
-        const tasks = await this.aiService.generateTasks(populatedPrd.content, workspace.members, String(workspace._id));
+        const sanitizedContent = this.sanitizeMarkdown(populatedPrd.content);
+        const tasks = await this.aiService.generateTasks(
+          sanitizedContent,
+          workspace.members,
+          String(workspace._id),
+        );
 
-        const tasksArray = JSON.parse(tasks);
+        const tasksArray: CreateTaskDto[] = JSON.parse(
+          tasks,
+        ) as CreateTaskDto[];
         await this.tasksService.createBulkTasks(tasksArray, userId);
-
       }
 
       return {

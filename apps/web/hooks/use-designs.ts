@@ -13,12 +13,11 @@ export function useDesign (workspaceId: string) {
   const createDesign =  useMutation({
       mutationFn: DesignService.createDesign,
       onSuccess: (response) => {
-        
+
         if (response.success && response.data) {
           // Add the new design to the individual design cache
           // Store just the design data, not the full API response
-          console.log("Design created successfully:", response.data);
-          
+
           queryClient.setQueryData(queryKeys.designs.detail(response.data._id), response.data);
 
           // Update the designs list optimistically
@@ -142,8 +141,7 @@ export const useDesigns = (workspaceId:string) => {
         queryFn: async () => {
             const response = await DesignService.getAllDesigns(workspaceId)
             if(response.success){
-                console.log('from query function: 🔴', response.data);
-                return response.data;              
+                return response.data;
             }
             throw new Error(response.message || "failed to get desings");
         },

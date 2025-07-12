@@ -76,12 +76,6 @@ export default function WorkspacePage() {
         activeReleases: 0,
       };
 
-    // Debug logging to see what's in the workspace
-    console.log("🔍 Workspace data:", workspace);
-    console.log("🎨 Designs array:", workspace.designs);
-    console.log("📋 Tasks array:", workspace.tasks);
-    console.log("🚀 Releases array:", workspace.releases);
-
     const releases = workspace.releases || [];
     const tasks = workspace.tasks || [];
     const designs = workspace.designs || [];

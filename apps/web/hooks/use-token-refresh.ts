@@ -9,7 +9,6 @@ export const useTokenRefresh = () => {
 
   const refreshToken = useCallback(async () => {
     if (!tokenManager.isAuthenticated()) {
-      console.log("Not authenticated, skipping token refresh");
       return false;
     }
 
@@ -20,7 +19,6 @@ export const useTokenRefresh = () => {
     }
 
     try {
-      console.log("Attempting automatic token refresh...");
       const response = await AuthService.refreshToken(refreshTokenValue);
 
       if (response.success) {

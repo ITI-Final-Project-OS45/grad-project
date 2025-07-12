@@ -136,7 +136,6 @@ const tokenManager = {
         const data = await response.json();
         if (data.success && data.data?.accessToken && data.data?.refreshToken) {
           tokenManager.setTokens(data.data.accessToken, data.data.refreshToken);
-          console.log("Token refreshed automatically");
           return true;
         }
       }
@@ -164,7 +163,6 @@ const tokenManager = {
           tokenManager.refreshTokenSilently();
         }, refreshTime - now);
 
-        console.log(`Token refresh scheduled for ${new Date(refreshTime).toLocaleTimeString()}`);
         return timeout;
       }
 

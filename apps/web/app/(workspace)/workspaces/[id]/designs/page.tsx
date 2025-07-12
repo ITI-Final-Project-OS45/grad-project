@@ -33,7 +33,6 @@ export default function DesignsPage() {
   const { canCreateDesign, canUpdateDesign, canDeleteDesign } = useWorkspacePermissions(currentUserId, currentUserRole);
 
   function onDeleteDesign(designId: string) {
-    console.log("Delete design  of ID:", designId);
     deleteDesign.mutateAsync(designId);
   }
 
@@ -45,7 +44,6 @@ export default function DesignsPage() {
       return;
     }
     setEditingDesign(design);
-    console.log(design);
     setEditDialogOpen(true);
   }
 
