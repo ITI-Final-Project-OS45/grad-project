@@ -4,18 +4,20 @@ import { CreateDesignDialog } from "@/components/design/create-design-dialog";
 import { UpdateDesignDialog } from "@/components/design/update-design-dialog";
 import { useDesign, useDesigns } from "@/hooks/use-designs";
 import type { DesignResponse } from "@repo/types";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React from "react";
-import { Palette, Sparkles } from "lucide-react";
+import { Palette, Sparkles, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useWorkspacePermissions } from "@/lib/permissions";
 import { useUser } from "@/hooks/use-user";
 import { useWorkspaceMembersByWorkspace } from "@/hooks/use-workspace-members";
 import { DesignsList, DesignItem } from "@/components/design/designs-list";
+import { Button } from "@/components/ui/button";
 
 export default function DesignsPage() {
   const { id: workspaceId }: { id: string } = useParams();
+  const router = useRouter();
   const { data: designs, error, isLoading } = useDesigns(workspaceId);
   const { createDesign, updateDesign, deleteDesign } = useDesign(workspaceId);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -49,6 +51,14 @@ export default function DesignsPage() {
 
   return (
     <div className="min-h-screen">
+      {/* Back Button */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Button variant="ghost" onClick={() => router.push(`/workspaces/${workspaceId}`)}>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Workspace
+        </Button>
+      </div>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-b border-border/50">
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />

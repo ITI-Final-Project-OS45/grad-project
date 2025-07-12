@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Plus,
   Rocket,
@@ -16,6 +16,7 @@ import {
   XCircle,
   Clock,
   Play,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -150,6 +151,7 @@ function ReleaseCard({ release, workspaceId }: ReleaseCardProps) {
 export default function ReleasesPage() {
   const params = useParams();
   const workspaceId = params.id as string;
+  const router = useRouter();
 
   // State
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -245,6 +247,13 @@ export default function ReleasesPage() {
       animate="visible"
       className="container mx-auto p-6 space-y-6"
     >
+      {/* Back to Workspace Button */}
+      <div className="flex items-center gap-4 mb-6 pt-4">
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/workspaces/${workspaceId}`)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Workspace
+        </Button>
+      </div>
       {/* Header */}
       <motion.div variants={itemVariants}>
         <div className="flex items-center justify-between">

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useParams } from "next/navigation";
-import { Download, History, Eye, FileText, Plus } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Download, History, Eye, FileText, Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { PrdExportService } from "@/lib/prd-export";
 
 export default function PRDPage() {
   const params = useParams();
+  const router = useRouter();
   const workspaceId = params.id as string;
 
   // Hooks
@@ -181,6 +182,13 @@ export default function PRDPage() {
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
+        <div className="flex items-center gap-4 mb-6 pt-4">
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/workspaces/${workspaceId}`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Workspace
+          </Button>
+        </div>
+
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
