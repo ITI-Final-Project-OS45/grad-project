@@ -11,6 +11,7 @@ import {
   Put,
   Req,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { PrdService } from './prd.service';
 import { AuthGuard } from 'src/guards/auth.guards';
@@ -28,10 +29,12 @@ export class PrdController {
     @Param('workspaceId') workspaceId: string,
     @Body() createPrdDto: CreatePrdDto,
     @Req() req: RequestWithUser,
+    @Query('auto') generateTasks: boolean
   ): Promise<ApiResponse<Prd, ApiError>> {
     return await this.prdService.create(
       { ...createPrdDto, workspaceId },
       req.userId,
+      generateTasks
     );
   }
 

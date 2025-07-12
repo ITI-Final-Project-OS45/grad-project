@@ -415,4 +415,139 @@ export class TasksService {
       invalidUsers: invalidUsers.length > 0 ? invalidUsers : undefined,
     };
   }
+
+    /**
+   * Create multiple tasks from an array of task objects
+   * Manager only
+   */
+  async createBulkTasks(
+    tasksArray: CreateTaskDto[],
+    userId?: string,
+  ): Promise<ApiResponse<Task[], ApiError>> {
+    if (!Array.isArray(tasksArray) || tasksArray.length === 0) {
+      return {
+        success: false,
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid tasks array',
+        error: {
+          message:
+            'Tasks array must be a non-empty array of task objects. Please provide valid task data.',
+          error: 'INVALID_TASKS_ARRAY',
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      };
+    }
+
+    // Validate that all tasks belong to the same workspace
+    const workspaceIds = [...new Set(tasksArray.map((task) => task.workspaceId))];
+    if (workspaceIds.length !== 1) {
+      return {
+        success: false,
+        status: HttpStatus.BAD_REQUEST,
+        message: 'All tasks must belong to the same workspace',
+        error: {
+          message:
+            'Bulk task creation requires all tasks to be in the same workspace. Please ensure all tasks have the same workspaceId.',
+          error: 'MULTIPLE_WORKSPACES_NOT_ALLOWED',
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      };
+    }
+
+    const workspaceId = workspaceIds[0];
+    if (!workspaceId) {
+      return {
+        success: false,
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid workspace ID',
+        error: {
+          message:
+            'All tasks must have a valid workspaceId. Please ensure all tasks include a valid workspace ID.',
+          error: 'MISSING_WORKSPACE_ID',
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      };
+    }
+
+    // Validate workspace membership and manager permissions
+    if (userId) {
+      const hasPermission = await this.validateTaskPermission(
+        workspaceId,
+        userId,
+        'create',
+      );
+      if (!hasPermission) {
+        return {
+          success: false,
+          status: HttpStatus.FORBIDDEN,
+          message: 'Permission denied',
+          error: {
+            message:
+              'Only managers can create tasks in this workspace. You need manager permissions to create tasks. Please contact a workspace manager for assistance.',
+            error: 'INSUFFICIENT_PERMISSIONS',
+            statusCode: HttpStatus.FORBIDDEN,
+          },
+        };
+      }
+    }
+
+    // Validate all assigned users are members of the workspace
+    const allAssignedUsers = tasksArray.flatMap(
+      (task) => task.assignedTo || [],
+    );
+    const uniqueAssignedUsers = [...new Set(allAssignedUsers)];
+
+    if (uniqueAssignedUsers.length > 0) {
+      const assignedUsersValidation = await this.validateAssignedUsers(
+        workspaceId,
+        uniqueAssignedUsers,
+      );
+      if (!assignedUsersValidation.isValid) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          message: 'Invalid assigned users',
+          error: {
+            message:
+              'Some assigned users are not members of the workspace. Please ensure all assigned users are valid workspace members: ' +
+              assignedUsersValidation.invalidUsers?.join(', '),
+            error: 'INVALID_ASSIGNED_USERS',
+            statusCode: HttpStatus.BAD_REQUEST,
+          },
+        };
+      }
+    }
+
+    try {
+      // Create all tasks in bulk
+      const createdTasks = await this.taskModel.insertMany(tasksArray);
+
+      // Add all task IDs to workspace's tasks array
+      const taskIds = createdTasks.map((task) => task._id);
+      await this.workspaceModel.findByIdAndUpdate(
+        workspaceId,
+        { $push: { tasks: { $each: taskIds } } },
+        { new: true },
+      );
+
+      return {
+        success: true,
+        status: HttpStatus.CREATED,
+        message: `${createdTasks.length} tasks created successfully`,
+        data: createdTasks as Task[],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to create tasks',
+        error: {
+          message:
+            'An error occurred while creating the tasks. Please check your task data and try again.',
+          error: 'BULK_TASK_CREATION_FAILED',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        },
+      };
+    }
+  }
 }

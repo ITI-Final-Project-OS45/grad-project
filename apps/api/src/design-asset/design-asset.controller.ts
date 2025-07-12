@@ -22,7 +22,6 @@ export class DesignAssetController {
     @Req() req: RequestWithUser,
     @UploadedFile() file: Express.Multer.File
  ) {
-    console.log(`🟢 create@DesignAssetController: <- `, designAsset);
     return this.designAssetService.create(designAsset, req.userId, file);
   }
 
@@ -48,7 +47,6 @@ export class DesignAssetController {
     @Req() req: RequestWithUser,
     @UploadedFile() file: Express.Multer.File
   ) {
-    console.log(designAsset);
     
     return this.designAssetService.update(id, designAsset, file, req.userId);
   }

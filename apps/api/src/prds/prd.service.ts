@@ -14,6 +14,9 @@ import {
   WorkspaceNotFoundException,
   UnauthorizedActionException,
 } from '../exceptions/domain.exceptions';
+import { AiService } from 'src/design-asset/ai.service';
+import { Task, TaskDocument } from 'src/schemas/task.schema';
+import { TasksService } from 'src/tasks/tasks.service';
 
 @Injectable()
 export class PrdService {
@@ -22,11 +25,16 @@ export class PrdService {
     private readonly prdModel: Model<PrdDocument>,
     @InjectModel(Workspace.name)
     private readonly workspaceModel: Model<WorkspaceDocument>,
+    private readonly aiService: AiService,
+    // @InjectModel(Task.name)
+    // private readonly taskModel: Model<TaskDocument>,
+    private readonly tasksService: TasksService
   ) {}
 
   async create(
     createPrdDto: CreatePrdDto,
     userId: string,
+    generateTasks: boolean
   ): Promise<ApiResponse<Prd, ApiError>> {
     // Validate workspace exists
     const workspace = await this.workspaceModel
@@ -96,6 +104,15 @@ export class PrdService {
         .populate('createdBy', 'username displayName email')
         .lean<Prd>()
         .exec();
+
+      //! generate tasks by gemini
+      if (populatedPrd && generateTasks) {
+        const tasks = await this.aiService.generateTasks(populatedPrd.content, workspace.members, String(workspace._id));
+
+        const tasksArray = JSON.parse(tasks);
+        await this.tasksService.createBulkTasks(tasksArray, userId);
+
+      }
 
       return {
         success: true,

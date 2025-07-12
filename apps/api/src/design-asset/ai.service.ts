@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { WorkspaceMemberDto } from "@repo/types";
 
 @Injectable()
 export class AiService {
@@ -25,7 +26,6 @@ export class AiService {
                 }
             ]
         };
-        console.log('[sendMessage] Sending payload:', payload);
         
         const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
             method: 'POST',
@@ -36,13 +36,65 @@ export class AiService {
             },
             body: JSON.stringify(payload)
         });
-        console.log('[sendMessage] Response status:', res.status);
         
         const data = await res.json();
-        // console.log('[sendMessage] API response:', data);
 
         return data?.candidates[0]?.content?.parts[0].text || 'No Description.';
-        // return data;
+    }
+    
+    async generateTasks(prd: string, workspaceMembers: WorkspaceMemberDto[], workspaceId: string){
+        // Prepare request payload
+        const payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": `for a software project (of workspaceId = ${workspaceId}) of the following PRD: ${prd} and the following members ${JSON.stringify(workspaceMembers)}, generate a list of tasks for the project in the form of (without any other text or markdown formatting) array of mongoose documents of the schema 
+@Schema({ timestamps: true })
+export class Task extends Document {
+  @Prop({ required: true })
+  title!: string;
+
+  @Prop({ required: true, enum: ['todo', 'in-progress', 'done'] })
+  status!: 'todo' | 'in-progress' | 'done';
+
+  @Prop({ type: [String], required: true })
+  assignedTo!: string[];
+
+  @Prop()
+  description?: string;
+
+  @Prop({ required: true })
+  workspaceId!: string;
+
+  @Prop()
+  dueDate?: string;
+
+  @Prop({ enum: ['low', 'medium', 'high'], default: 'medium' })
+  priority?: 'low' | 'medium' | 'high';
+
+  @Prop({ required: true })
+  position!: number;
+}
+`
+                        },
+                    ]
+                }
+            ]
+        };        
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-goog-api-key': `${this.config.get('GEMINI_API_SECRET_KEY')}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+
+        return data?.candidates[0]?.content?.parts[0].text || 'No Description.';
     }
 
      fileToBase64(file: Express.Multer.File) {

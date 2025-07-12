@@ -79,10 +79,6 @@ export class DesignAssetService {
       fileType = file.mimetype; // e.g., "image/jpeg", "image/png"
       const fileExtension = file.originalname.split('.').pop()?.toLowerCase(); // e.g., "jpg", "png"
       
-      console.log('File MIME type:', fileType);
-      console.log('File extension:', fileExtension);
-      
-      // Optional: Validate file type
       const allowedMimeTypes = [
         'image/jpeg',
         'image/png', 
@@ -107,14 +103,10 @@ export class DesignAssetService {
       url = designAssetDto?.assetUrl || ''; 
     }
 
-    //!##########################################
     if (designAssetDto.description.trim() == '' && file && fileType){
-        console.log(workspaceExists.description);
         
         const desc = await this.aiService.generateText(file, fileType, workspaceExists?.description || '');
-        console.log(desc);
         designAssetDto.description = desc;
-
     }
 
     const createDesignAssetDto: CreateDesignAssetDto = {...designAssetDto, assetUrl: url, uploadedBy: user!.username,};
@@ -162,7 +154,6 @@ export class DesignAssetService {
     file: Express.Multer.File,
     userId: string,
   ) {
-    console.log(updateDesignAsset);
     let data: DesignAssetDocument | null;
 
     // is the user the uploader of the design asset?
