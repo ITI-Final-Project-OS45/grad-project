@@ -155,6 +155,9 @@ apps/api/src/
    # Server
    PORT=8080
    CORS_ORIGIN=http://localhost:3000
+
+   # Gemini API
+    GEMINI_API_SECRET_KEY=your-gemini-api
    ```
 
 4. **Start the development server**

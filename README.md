@@ -148,6 +148,7 @@ grad-project/
    CLOUDINARY_API_SECRET=your-api-secret
    PORT=8080
    CORS_ORIGIN=http://localhost:3000
+   GEMINI_API_SECRET_KEY=your-gemini-api
    ```
 
 4. **Start the development servers**
@@ -177,8 +178,7 @@ grad-project/
 - [Web App Features](./apps/web/Documentation.md#-features)
 - [API Endpoints](./apps/api/Documentation.md#-api-endpoints)
 - [Getting Started Guide](./apps/web/Documentation.md#-getting-started)
-- [Deployment Instructions](./apps/web/Documentation.md#-deployment)
-
+- 
 ## 🛠 Development
 
 ### Available Scripts
